@@ -39,8 +39,9 @@
   if (nav) {
     const items = [
       { page: 'dashboard', href: './dashboard.html', label: 'Inicio' },
-      { page: 'temas', href: './temas.html?v=20261018-1', label: 'Temas' },
+      { page: 'temas', href: './temas.html', label: 'Temas' },
       { page: 'importar', href: './importar.html', label: 'Importar' },
+      { page: 'exportar', href: './exportar.html', label: 'Exportar' },
       { page: 'estadisticas', href: './estadisticas.html', label: 'Stats' },
       { page: 'falladas', href: './falladas.html', label: 'Falladas' },
     ]
