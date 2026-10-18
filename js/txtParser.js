@@ -16,8 +16,16 @@ function parsearTxt(contenido) {
   const preguntas = []
   const errores = []
   const codigos = new Set()
+  let inicio = exportado ? 1 : 0
+  if (!exportado) {
+    const primera = lineas.findIndex(linea => linea.trim())
+    if (primera >= 0) {
+      const campos = lineas[primera].split('|')
+      if (campos.length >= 7 && /^(id|n[uú]mero|n[º°.]?)$/i.test(campos[0].trim())) inicio = primera + 1
+    }
+  }
 
-  for (let i = 1; i < lineas.length; i++) {
+  for (let i = inicio; i < lineas.length; i++) {
     const linea = lineas[i]
     if (exportado ? linea.every(valor => !String(valor).trim()) : !linea.trim()) continue
 
@@ -30,7 +38,7 @@ function parsearTxt(contenido) {
     const [numStr, pregunta, a, b, c, d, correctaRaw, ...explParts] = partes
     const numero = parseInt(numStr, 10)
 
-    if (isNaN(numero)) {
+    if (!/^\d+$/.test(numStr.trim()) || !Number.isSafeInteger(numero) || numero < 1) {
       errores.push(`Linea ${i + 1}: numero invalido "${numStr}"`)
       continue
     }
