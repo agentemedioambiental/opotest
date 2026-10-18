@@ -33,7 +33,7 @@
     </div>
 
     <div id="gruposFiltro" class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4"></div>
-    <p id="resumen" class="text-xs text-gray-400 px-1">Temas v20261018-1</p>
+    <p id="resumen" class="text-xs text-gray-400 px-1">Temas v20261018-2</p>
 
     <div id="spinner" class="flex justify-center py-16"><div class="spinner"></div></div>
     <div id="lista" class="hidden space-y-5"></div>
@@ -93,8 +93,8 @@
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="./js/config.js?v=20260508-1"></script>
-  <script src="./js/auth.js?v=20260508-1"></script>
-  <script src="./js/utils.js?v=20260508-1"></script>
+  <script src="./js/auth.js?v=20261018-2"></script>
+  <script src="./js/utils.js?v=20261018-2"></script>
   <script src="./js/layout.js?v=20261018-1"></script>
   <script>
     let todosLosTemas = []
@@ -110,6 +110,9 @@
       }, 15000)
 
       try {
+        if (typeof conTiempoLimite !== 'function' || typeof contarPreguntasPorTema !== 'function' || typeof contarPreguntasPorCodigo !== 'function') {
+          throw new Error('Falta actualizar js/utils.js. Sube la version nueva y recarga con Ctrl+F5.')
+        }
         const session = await requireAuth()
         if (!session) return
         initLayout('temas', 'Temas', './dashboard.html')
@@ -212,7 +215,7 @@
       const resumen = document.getElementById('resumen')
       const pendientes = filtrados.some(t => t.preguntas_count === null)
       const total = filtrados.reduce((s, t) => s + (t.preguntas_count || 0), 0)
-      resumen.textContent = `Temas v20261018-1 - ${filtrados.length} temas - ${pendientes ? 'calculando preguntas' : total.toLocaleString('es-ES') + ' preguntas'}`
+      resumen.textContent = `Temas v20261018-2 - ${filtrados.length} temas - ${pendientes ? 'calculando preguntas' : total.toLocaleString('es-ES') + ' preguntas'}`
 
       if (!filtrados.length) {
         lista.classList.add('hidden')
