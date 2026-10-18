@@ -1,31 +1,29 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>OpoTest – Configurar test</title>
+  <title>OpoTest - Configurar test</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-
   <header id="appHeader"></header>
 
   <main class="max-w-2xl mx-auto px-4 pt-4 pb-32 space-y-5">
+    <p id="versionTest" class="text-[10px] text-gray-300 px-1">Test v20260508-2</p>
 
-    <!-- Número de preguntas -->
     <div>
-      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nº de preguntas</h2>
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Numero de preguntas</h2>
       <div class="grid grid-cols-4 gap-2" id="cantidadBtns">
-        <button data-val="20"    onclick="setCantidad(20)"    class="cantidad-btn activo py-3 rounded-xl text-sm font-medium border-2 border-indigo-600 bg-indigo-600 text-white transition-colors">20</button>
-        <button data-val="40"    onclick="setCantidad(40)"    class="cantidad-btn py-3 rounded-xl text-sm font-medium border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">40</button>
-        <button data-val="60"    onclick="setCantidad(60)"    class="cantidad-btn py-3 rounded-xl text-sm font-medium border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">60</button>
-        <button data-val="todas" onclick="setCantidad('todas')" class="cantidad-btn py-3 rounded-xl text-sm font-medium border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">Todas</button>
+        <button data-val="20" onclick="setCantidad(20)" class="cantidad-btn py-3 rounded-xl text-sm font-medium border-2 transition-colors">20</button>
+        <button data-val="40" onclick="setCantidad(40)" class="cantidad-btn py-3 rounded-xl text-sm font-medium border-2 transition-colors">40</button>
+        <button data-val="60" onclick="setCantidad(60)" class="cantidad-btn py-3 rounded-xl text-sm font-medium border-2 transition-colors">60</button>
+        <button data-val="todas" onclick="setCantidad('todas')" class="cantidad-btn py-3 rounded-xl text-sm font-medium border-2 transition-colors">Todas</button>
       </div>
     </div>
 
-    <!-- Toggle incluir eliminadas -->
     <button onclick="toggleElim()"
       class="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors"
       id="elimBtn">
@@ -35,40 +33,30 @@
       </div>
     </button>
 
-    <!-- Selección de temas -->
     <div>
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Temas <span id="selCount" class="text-indigo-600 dark:text-indigo-400">(0)</span>
         </h2>
-        <button onclick="toggleTodos()" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Seleccionar todo</button>
+        <button id="btnToggleTodos" onclick="toggleTodos()" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium disabled:opacity-40" disabled>Seleccionar todo</button>
       </div>
 
-      <!-- Filtro grupos -->
-      <div id="gruposFiltro" class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-3"></div>
-
-      <!-- Spinner -->
+      <div id="gruposFiltro" class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 mb-3"></div>
       <div id="spinner" class="flex justify-center py-8"><div class="spinner"></div></div>
-
-      <!-- Grupos colapsables -->
-      <div id="temasContainer" class="hidden space-y-3"></div>
-
-      <!-- Empty -->
+      <div id="errorBox" class="hidden text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2.5 rounded-lg"></div>
+      <div id="temasContainer" class="hidden space-y-4"></div>
       <div id="emptyTemas" class="hidden text-center py-8">
-        <p class="text-gray-400 text-sm">No hay temas con preguntas.<br>Importa datos primero.</p>
-        <a href="./importar.html" class="inline-block mt-3 text-indigo-600 text-sm font-medium">Ir a Importar →</a>
+        <p class="text-gray-400 text-sm">No hay temas cargados.</p>
+        <a href="./importar.html" class="inline-block mt-3 text-indigo-600 text-sm font-medium">Ir a Importar</a>
       </div>
     </div>
-
   </main>
 
-  <!-- Botón iniciar (sticky) -->
   <div class="fixed bottom-16 left-0 right-0 px-4 py-3 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent pointer-events-none">
     <div class="max-w-2xl mx-auto pointer-events-auto">
       <button id="btnIniciar" onclick="iniciarTest()"
         class="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:pointer-events-none text-white font-bold text-base rounded-2xl shadow-lg transition-colors flex items-center justify-center gap-2"
         disabled>
-        <span>▶</span>
         <span id="btnLabel">Selecciona al menos un tema</span>
         <div id="spinnerBtn" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
       </button>
@@ -78,116 +66,219 @@
   <nav id="bottomNav"></nav>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="./js/config.js"></script>
-  <script src="./js/auth.js"></script>
-  <script src="./js/utils.js"></script>
-  <script src="./js/layout.js"></script>
+  <script src="./js/config.js?v=20260506-10"></script>
+  <script src="./js/auth.js?v=20260506-10"></script>
+  <script src="./js/utils.js?v=20260506-10"></script>
+  <script src="./js/layout.js?v=20260506-10"></script>
   <script src="./js/shuffle.js"></script>
   <script>
-    let temas         = []
+    let temas = []
     let seleccionados = new Set()
-    let cantidad      = 20
-    let incluirElim   = false
-    let grupoFiltro   = ''
-    let expandido     = {}
+    let cantidad = 20
+    let incluirElim = false
+    let temasCargados = false
+    let grupoActivo = ''
+    const gruposConRecuento = new Set()
 
-    (async () => {
-      await requireAuth()
-      initLayout('dashboard', 'Configurar test', './dashboard.html')
+    ;(async () => {
+      const watchdog = setTimeout(() => {
+        mostrarError('La pagina esta tardando demasiado. Recarga o inicia sesion de nuevo.')
+      }, 15000)
 
-      const preselect = getParam('temas')
-      await cargarTemas()
-      if (preselect) { seleccionados.add(preselect); renderTemas() }
+      try {
+        await requireAuth()
+        initLayout('dashboard', 'Configurar test', './dashboard.html')
+        setCantidad(20)
+        grupoActivo = getParam('grupo') || ''
+        await cargarTemas()
+
+        const preselect = getParam('temas')
+        if (preselect && temas.some(t => t.id === preselect)) {
+          seleccionados.add(preselect)
+          renderTemas()
+        }
+      } catch (e) {
+        mostrarError(e.message || 'No se pudo cargar la pantalla de test.')
+      } finally {
+        clearTimeout(watchdog)
+        document.getElementById('spinner').classList.add('hidden')
+      }
     })()
 
     async function cargarTemas() {
-      try {
-        const { data } = await db.from('temas')
-          .select('*, preguntas_count:preguntas(count)')
-          .order('grupo').order('codigo')
+      const { data, error } = await conTiempoLimite(
+        db.from('temas').select('id,grupo,codigo,tema').order('grupo').order('codigo'),
+        10000,
+        'La carga de temas ha tardado demasiado'
+      )
+      if (error) throw error
 
-        temas = (data || []).map(t => ({
-          ...t,
-          preguntas_count: t.preguntas_count?.[0]?.count ?? 0,
-        })).filter(t => t.preguntas_count > 0)
+      const rows = (data || []).map(t => ({
+        ...t,
+        grupo: String(t.grupo || 'Sin grupo'),
+        codigo: String(t.codigo || ''),
+        tema: String(t.tema || ''),
+        preguntas_count: null,
+      }))
 
-        renderGrupos()
-        renderTemas()
-      } catch (e) { toast('Error al cargar temas', 'error') }
-      finally { document.getElementById('spinner').classList.add('hidden') }
+      temas = rows
+      renderGrupos()
+
+      await cargarRecuentos(grupoActivo ? temas.filter(t => t.grupo === grupoActivo) : temas)
+
+      temasCargados = true
+      document.getElementById('spinner').classList.add('hidden')
+      document.getElementById('btnToggleTodos').disabled = temas.length === 0
+      renderGrupos()
+      renderTemas()
+    }
+
+    async function cargarRecuentos(listaTemas) {
+      const objetivo = (listaTemas || []).filter(t => t.preguntas_count === null)
+      if (!objetivo.length) return
+
+      const filtros = { activa: true, eliminada: false }
+      const recuentos = await Promise.allSettled([
+        contarPreguntasPorTema(objetivo.map(t => t.id), filtros),
+        contarPreguntasPorCodigo(objetivo.map(t => t.codigo), filtros),
+      ])
+      const porId = recuentos[0].status === 'fulfilled' ? recuentos[0].value : {}
+      const porCodigo = recuentos[1].status === 'fulfilled' ? recuentos[1].value : {}
+      const conteoDisponible = recuentos.some(r => r.status === 'fulfilled')
+      const idsContados = new Set(objetivo.map(t => t.id))
+
+      temas = temas
+        .map(t => idsContados.has(t.id)
+          ? { ...t, preguntas_count: conteoDisponible ? Math.max(porId[t.id] || 0, porCodigo[t.codigo] || 0) : null }
+          : t
+        )
+        .filter(t => !idsContados.has(t.id) || t.preguntas_count === null || t.preguntas_count > 0)
+
+      if (!grupoActivo) {
+        temas.forEach(t => gruposConRecuento.add(t.grupo))
+      } else {
+        gruposConRecuento.add(grupoActivo)
+      }
     }
 
     function renderGrupos() {
-      const grupos = [...new Set(temas.map(t => t.grupo))]
-      if (grupos.length <= 1) return
       const cont = document.getElementById('gruposFiltro')
-      cont.innerHTML = ['', ...grupos].map(g => `
-        <button onclick="setGrupo('${g}')" data-grupo="${g}"
-          class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
-            ${g === grupoFiltro ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}">
-          ${g || 'Todos'}
-        </button>`).join('')
+      cont.innerHTML = ''
+      const grupos = ['', ...new Set(temas.map(t => t.grupo))]
+      grupos.forEach(g => {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.textContent = g || 'Todos'
+        btn.dataset.grupo = g
+        btn.className = claseGrupo(g === grupoActivo)
+        btn.addEventListener('click', () => setGrupo(g))
+        cont.appendChild(btn)
+      })
     }
 
-    function setGrupo(g) {
-      grupoFiltro = g
-      document.querySelectorAll('#gruposFiltro button').forEach(b => {
-        b.className = `shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
-          ${b.dataset.grupo === g ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`
-      })
+    function claseGrupo(activo) {
+      return `shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+        activo ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+      }`
+    }
+
+    async function setGrupo(g) {
+      grupoActivo = g
+      renderGrupos()
       renderTemas()
+
+      if (g && !gruposConRecuento.has(g)) {
+        await cargarRecuentos(temas.filter(t => t.grupo === g))
+        renderGrupos()
+        renderTemas()
+      }
     }
 
     function renderTemas() {
-      const filtrados = grupoFiltro ? temas.filter(t => t.grupo === grupoFiltro) : temas
       const cont = document.getElementById('temasContainer')
       const empty = document.getElementById('emptyTemas')
+      cont.innerHTML = ''
 
-      if (temas.length === 0) { empty.classList.remove('hidden'); return }
+      if (!temasCargados) return
+
+      if (!temas.length) {
+        cont.classList.add('hidden')
+        empty.classList.remove('hidden')
+        actualizarBoton()
+        return
+      }
+
       empty.classList.add('hidden')
       cont.classList.remove('hidden')
 
-      const porGrupo = filtrados.reduce((acc, t) => { (acc[t.grupo]=acc[t.grupo]||[]).push(t); return acc }, {})
+      const temasFiltrados = grupoActivo ? temas.filter(t => t.grupo === grupoActivo) : temas
 
-      cont.innerHTML = Object.entries(porGrupo).map(([grupo, gTemas]) => {
-        const todos   = gTemas.every(t => seleccionados.has(t.id))
-        const alguno  = gTemas.some(t => seleccionados.has(t.id))
-        const isOpen  = expandido[grupo] !== false
-        const nSel    = gTemas.filter(t => seleccionados.has(t.id)).length
-        return `
-          <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800">
-              <input type="checkbox" ${todos ? 'checked' : ''} ${alguno && !todos ? 'data-indeterminate="true"' : ''}
-                onchange="toggleGrupo('${grupo}')"
-                class="w-4 h-4 shrink-0 rounded accent-indigo-600">
-              <span class="flex-1 text-sm font-semibold text-gray-800 dark:text-gray-200 cursor-pointer"
-                onclick="toggleExpand('${grupo}')">${grupo}</span>
-              <span class="text-xs text-gray-400">${nSel}/${gTemas.length}</span>
-              <button onclick="toggleExpand('${grupo}')" class="text-gray-400 text-sm">${isOpen ? '▲' : '▼'}</button>
-            </div>
-            ${isOpen ? `
-              <div class="divide-y divide-gray-100 dark:divide-gray-700">
-                ${gTemas.map(t => `
-                  <label class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <input type="checkbox" ${seleccionados.has(t.id) ? 'checked' : ''}
-                      onchange="toggleTema('${t.id}')" class="w-4 h-4 shrink-0 accent-indigo-600">
-                    <span class="flex-1 text-sm text-gray-700 dark:text-gray-300 leading-snug">
-                      <span class="font-mono text-xs text-gray-400 mr-1">${t.codigo}</span>${t.tema}
-                    </span>
-                    <span class="text-xs text-gray-400 shrink-0">${t.preguntas_count}</span>
-                  </label>`).join('')}
-              </div>` : ''}
-          </div>`
-      }).join('')
+      if (!temasFiltrados.length) {
+        cont.classList.add('hidden')
+        empty.classList.remove('hidden')
+        actualizarBoton()
+        return
+      }
 
-      // Aplicar indeterminate via JS
-      document.querySelectorAll('[data-indeterminate="true"]').forEach(el => { el.indeterminate = true })
+      const porGrupo = temasFiltrados.reduce((acc, t) => {
+        ;(acc[t.grupo] = acc[t.grupo] || []).push(t)
+        return acc
+      }, {})
+
+      Object.entries(porGrupo).forEach(([grupo, gTemas]) => {
+        const bloque = document.createElement('div')
+        bloque.className = 'border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden'
+
+        const header = document.createElement('div')
+        header.className = 'px-4 py-3 bg-gray-50 dark:bg-gray-800 flex items-center justify-between gap-3'
+        const title = document.createElement('p')
+        title.className = 'text-sm font-semibold text-gray-800 dark:text-gray-200'
+        title.textContent = grupo
+        const meta = document.createElement('button')
+        meta.type = 'button'
+        meta.className = 'text-xs text-indigo-600 dark:text-indigo-400 font-medium'
+        meta.textContent = 'Seleccionar grupo'
+        meta.addEventListener('click', () => toggleGrupo(grupo))
+        header.appendChild(title)
+        header.appendChild(meta)
+        bloque.appendChild(header)
+
+        const lista = document.createElement('div')
+        lista.className = 'divide-y divide-gray-100 dark:divide-gray-700'
+        gTemas.forEach(t => lista.appendChild(crearFilaTema(t)))
+        bloque.appendChild(lista)
+        cont.appendChild(bloque)
+      })
+
       actualizarBoton()
     }
 
-    function toggleExpand(grupo) {
-      expandido[grupo] = expandido[grupo] === false ? true : false
-      renderTemas()
+    function crearFilaTema(t) {
+      const label = document.createElement('label')
+      label.className = 'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'
+
+      const checkbox = document.createElement('input')
+      checkbox.type = 'checkbox'
+      checkbox.className = 'w-4 h-4 shrink-0 accent-indigo-600'
+      checkbox.checked = seleccionados.has(t.id)
+      checkbox.addEventListener('change', () => toggleTema(t.id))
+
+      const text = document.createElement('span')
+      text.className = 'flex-1 text-sm text-gray-700 dark:text-gray-300 leading-snug'
+      const code = document.createElement('span')
+      code.className = 'font-mono text-xs text-gray-400 mr-1'
+      code.textContent = t.codigo
+      text.appendChild(code)
+      text.appendChild(document.createTextNode(t.tema))
+
+      const count = document.createElement('span')
+      count.className = 'text-xs text-gray-400 shrink-0'
+      count.textContent = t.preguntas_count === null ? '?' : String(t.preguntas_count)
+
+      label.appendChild(checkbox)
+      label.appendChild(text)
+      label.appendChild(count)
+      return label
     }
 
     function toggleTema(id) {
@@ -196,25 +287,32 @@
     }
 
     function toggleGrupo(grupo) {
-      const gTemas = temas.filter(t => t.grupo === grupo)
-      const todos  = gTemas.every(t => seleccionados.has(t.id))
+      const gTemas = temas.filter(t => t.grupo === grupo && puedeSeleccionarse(t))
+      const todos = gTemas.every(t => seleccionados.has(t.id))
       gTemas.forEach(t => todos ? seleccionados.delete(t.id) : seleccionados.add(t.id))
       renderTemas()
     }
 
     function toggleTodos() {
-      const filtrados = grupoFiltro ? temas.filter(t => t.grupo === grupoFiltro) : temas
-      const todos = filtrados.every(t => seleccionados.has(t.id))
-      filtrados.forEach(t => todos ? seleccionados.delete(t.id) : seleccionados.add(t.id))
+      if (!temasCargados || !temas.length) return
+      const visibles = grupoActivo ? temas.filter(t => t.grupo === grupoActivo) : temas
+      const seleccionables = visibles.filter(puedeSeleccionarse)
+      const todos = seleccionables.every(t => seleccionados.has(t.id))
+      seleccionables.forEach(t => todos ? seleccionados.delete(t.id) : seleccionados.add(t.id))
       renderTemas()
+    }
+
+    function puedeSeleccionarse(t) {
+      return t.preguntas_count === null || t.preguntas_count > 0
     }
 
     function setCantidad(val) {
       cantidad = val
       document.querySelectorAll('.cantidad-btn').forEach(btn => {
         const active = String(btn.dataset.val) === String(val)
-        btn.className = `cantidad-btn py-3 rounded-xl text-sm font-medium border-2 transition-colors
-          ${active ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`
+        btn.className = `cantidad-btn py-3 rounded-xl text-sm font-medium border-2 transition-colors ${
+          active ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+        }`
       })
       actualizarBoton()
     }
@@ -230,43 +328,81 @@
     function actualizarBoton() {
       const selArr = Array.from(seleccionados)
       document.getElementById('selCount').textContent = `(${selArr.length})`
-      const totalDisp = temas.filter(t => seleccionados.has(t.id)).reduce((s,t) => s+(t.preguntas_count||0), 0)
+
+      const pendientes = temas.some(t => seleccionados.has(t.id) && t.preguntas_count === null)
+      const totalDisp = temas
+        .filter(t => seleccionados.has(t.id))
+        .reduce((s, t) => s + (t.preguntas_count || 0), 0)
       const nTest = cantidad === 'todas' ? totalDisp : Math.min(totalDisp, cantidad)
-      const btn   = document.getElementById('btnIniciar')
-      btn.disabled = selArr.length === 0 || nTest === 0
-      document.getElementById('btnLabel').textContent = selArr.length > 0 && nTest > 0
-        ? `Iniciar test · ${nTest} preguntas`
-        : 'Selecciona al menos un tema'
+
+      const btn = document.getElementById('btnIniciar')
+      btn.disabled = selArr.length === 0 || (nTest === 0 && !pendientes)
+      document.getElementById('btnLabel').textContent =
+        selArr.length > 0 && nTest > 0 ? `Iniciar test - ${nTest} preguntas` :
+        selArr.length > 0 && pendientes ? 'Iniciar test' :
+        'Selecciona al menos un tema'
     }
 
     async function iniciarTest() {
       if (seleccionados.size === 0) return
-      document.getElementById('btnIniciar').disabled = true
+      const btn = document.getElementById('btnIniciar')
+      btn.disabled = true
       document.getElementById('spinnerBtn').classList.remove('hidden')
 
       try {
-        const temasIds = Array.from(seleccionados)
-        let query = db.from('preguntas').select('*').in('tema_id', temasIds).eq('activa', true)
-        if (!incluirElim) query = query.eq('eliminada', false)
-        const { data: preguntas, error } = await query
+        const temasSeleccionados = temas.filter(t => seleccionados.has(t.id))
+        const temasIds = temasSeleccionados.map(t => t.id)
+        const codigos = temasSeleccionados.map(t => t.codigo).filter(Boolean)
+        const consultas = []
+
+        if (temasIds.length) {
+          let porId = db.from('preguntas').select('*').in('tema_id', temasIds).eq('activa', true)
+          if (!incluirElim) porId = porId.eq('eliminada', false)
+          consultas.push(porId)
+        }
+
+        if (codigos.length) {
+          let porCodigo = db.from('preguntas').select('*').in('codigo_tema', codigos).eq('activa', true)
+          if (!incluirElim) porCodigo = porCodigo.eq('eliminada', false)
+          consultas.push(porCodigo)
+        }
+
+        const respuestas = await conTiempoLimite(Promise.all(consultas), 15000, 'La carga de preguntas ha tardado demasiado')
+        const error = respuestas.find(r => r.error)?.error
         if (error) throw error
-        if (!preguntas?.length) { toast('No hay preguntas disponibles', 'warning'); return }
+
+        const preguntas = [...new Map(respuestas.flatMap(r => r.data || []).map(p => [p.id, p])).values()]
+        if (!preguntas.length) throw new Error('No hay preguntas disponibles para los temas seleccionados.')
 
         const mezcladas = shuffle(preguntas)
-        const recorte   = cantidad === 'todas' ? mezcladas : mezcladas.slice(0, cantidad)
+        const recorte = cantidad === 'todas' ? mezcladas : mezcladas.slice(0, cantidad)
 
         const { data: intento, error: e2 } = await db.from('intentos_test')
           .insert({ temas_ids: temasIds, completado: false })
-          .select().single()
+          .select()
+          .single()
         if (e2) throw e2
 
-        guardarSesion({ intentoId: intento.id, preguntas: recorte, currentIndex: 0, respuestas: {}, startedAt: new Date().toISOString() })
-        window.location.href = `./test-activo.html?id=${intento.id}`
+        guardarSesion({
+          intentoId: intento.id,
+          preguntas: recorte,
+          currentIndex: 0,
+          respuestas: {},
+          startedAt: new Date().toISOString(),
+        })
+        window.location.href = `./test-activo.html?v=20260525-1&id=${intento.id}`
       } catch (e) {
-        toast('Error: ' + e.message, 'error')
-        document.getElementById('btnIniciar').disabled = false
+        toast('Error: ' + e.message, 'error', 6000)
+        btn.disabled = false
         document.getElementById('spinnerBtn').classList.add('hidden')
       }
+    }
+
+    function mostrarError(msg) {
+      document.getElementById('spinner').classList.add('hidden')
+      const box = document.getElementById('errorBox')
+      box.textContent = msg
+      box.classList.remove('hidden')
     }
   </script>
 </body>
