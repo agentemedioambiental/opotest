@@ -1,0 +1,146 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpoTest - Diagnostico</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+  <main class="max-w-2xl mx-auto px-4 py-6 space-y-4">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-bold">Diagnostico</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Comprueba conexion, permisos y datos de Supabase.</p>
+      </div>
+      <a href="./dashboard.html" class="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Volver</a>
+    </div>
+
+    <button onclick="ejecutarDiagnostico()"
+      class="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl">
+      Ejecutar diagnostico
+    </button>
+
+    <div id="resultados" class="space-y-2"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script>
+    const resultados = document.getElementById('resultados')
+
+    ;(async () => {
+      await ejecutarDiagnostico()
+    })()
+
+    async function ejecutarDiagnostico() {
+      resultados.innerHTML = ''
+
+      const checks = [
+        ['Version utils.js', () => Promise.resolve(window.OPOTEST_UTILS_VERSION || 'sin version / archivo antiguo')],
+        ['Sesion activa', comprobarSesion],
+        ['Leer temas', () => contarTabla('temas')],
+        ['Leer preguntas activas', () => contarTabla('preguntas', q => q.eq('activa', true))],
+        ['Preguntas no eliminadas', () => contarTabla('preguntas', q => q.eq('activa', true).eq('eliminada', false))],
+        ['Preguntas sin tema_id', contarHuerfanas],
+        ['Preguntas cuyo codigo no existe en temas', contarCodigosSinTema],
+        ['Recuento por tema_id', comprobarRecuentoTemaId],
+        ['Recuento por codigo_tema', comprobarRecuentoCodigo],
+        ['Vista estadisticas_preguntas', comprobarVistaStats],
+      ]
+
+      for (const [nombre, fn] of checks) {
+        const row = pintar(nombre, 'probando', 'info')
+        try {
+          const msg = await fn()
+          actualizar(row, msg, 'ok')
+        } catch (e) {
+          actualizar(row, e.message || String(e), 'error')
+        }
+      }
+    }
+
+    async function comprobarSesion() {
+      const { data, error } = await conTiempoLimite(db.auth.getSession(), 10000, 'Auth no responde')
+      if (error) throw error
+      if (!data.session) throw new Error('No hay sesion. Inicia sesion desde index.html.')
+      return data.session.user.email || data.session.user.id
+    }
+
+    async function contarTabla(tabla, build = q => q) {
+      const query = build(db.from(tabla).select('*', { count: 'exact', head: true }))
+      const { count, error } = await conTiempoLimite(query, 10000, `${tabla} no responde`)
+      if (error) throw error
+      return `${count ?? 0}`
+    }
+
+    async function contarHuerfanas() {
+      const { count, error } = await conTiempoLimite(
+        db.from('preguntas').select('*', { count: 'exact', head: true }).is('tema_id', null),
+        10000,
+        'No responde la consulta de huerfanas'
+      )
+      if (error) throw error
+      return `${count ?? 0}`
+    }
+
+    async function contarCodigosSinTema() {
+      const [{ data: preguntas, error: e1 }, { data: temas, error: e2 }] = await Promise.all([
+        conTiempoLimite(db.from('preguntas').select('codigo_tema').eq('activa', true).limit(1000), 10000),
+        conTiempoLimite(db.from('temas').select('codigo').limit(1000), 10000),
+      ])
+      if (e1) throw e1
+      if (e2) throw e2
+      const codigosTema = new Set((temas || []).map(t => t.codigo))
+      const codigosMal = [...new Set((preguntas || []).map(p => p.codigo_tema).filter(c => !codigosTema.has(c)))]
+      return codigosMal.length ? codigosMal.join(', ') : '0'
+    }
+
+    async function comprobarRecuentoTemaId() {
+      const { data: temas, error } = await conTiempoLimite(db.from('temas').select('id').limit(5), 10000)
+      if (error) throw error
+      const counts = await contarPreguntasPorTema((temas || []).map(t => t.id), { activa: true, eliminada: false })
+      return Object.values(counts).reduce((a, b) => a + b, 0).toString()
+    }
+
+    async function comprobarRecuentoCodigo() {
+      const { data: temas, error } = await conTiempoLimite(db.from('temas').select('codigo').limit(5), 10000)
+      if (error) throw error
+      const counts = await contarPreguntasPorCodigo((temas || []).map(t => t.codigo), { activa: true, eliminada: false })
+      return Object.values(counts).reduce((a, b) => a + b, 0).toString()
+    }
+
+    async function comprobarVistaStats() {
+      const { data, error } = await conTiempoLimite(db.from('estadisticas_preguntas').select('pregunta_id').limit(1), 10000)
+      if (error) throw error
+      return `${data?.length ?? 0} filas leibles`
+    }
+
+    function pintar(nombre, msg, tipo) {
+      const el = document.createElement('div')
+      el.className = clases(tipo)
+      el.innerHTML = `<p class="font-semibold text-sm"></p><p class="text-xs mt-1 break-words"></p>`
+      el.querySelector('p:first-child').textContent = nombre
+      el.querySelector('p:last-child').textContent = msg
+      resultados.appendChild(el)
+      return el
+    }
+
+    function actualizar(el, msg, tipo) {
+      el.className = clases(tipo)
+      el.querySelector('p:last-child').textContent = msg
+    }
+
+    function clases(tipo) {
+      const base = 'rounded-xl border px-4 py-3'
+      if (tipo === 'ok') return `${base} bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200`
+      if (tipo === 'error') return `${base} bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200`
+      return `${base} bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-200`
+    }
+  </script>
+</body>
+</html>
