@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>OpoTest – Acceso</title>
+  <title>OpoTest - Acceso</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <link rel="stylesheet" href="./css/style.css">
@@ -11,18 +11,17 @@
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
 
   <div class="w-full max-w-sm animate-fade">
-    <!-- Logo -->
     <div class="text-center mb-8">
-      <div class="text-5xl mb-3">📚</div>
+      <div class="mx-auto mb-3 h-14 w-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl font-bold shadow-sm">OP</div>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">OpoTest</h1>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Prepara tus oposiciones</p>
+      <p class="text-[10px] text-gray-300 mt-2">Acceso v20260506-10</p>
     </div>
 
-    <!-- Tabs login/registro -->
-    <div class="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
+    <div id="tabs" class="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
       <button id="tabLogin" onclick="showTab('login')"
         class="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white">
-        Iniciar sesión
+        Iniciar sesion
       </button>
       <button id="tabRegister" onclick="showTab('register')"
         class="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-500 dark:text-gray-400">
@@ -30,130 +29,174 @@
       </button>
     </div>
 
-    <!-- Formulario -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-4">
-
-      <!-- Email -->
-      <div>
+      <div id="emailBox">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
         <input id="email" type="email" autocomplete="email" placeholder="tu@email.com"
           class="w-full px-3.5 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
       </div>
 
-      <!-- Password -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Contraseña</label>
-        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••"
+      <div id="passwordBox">
+        <label id="passwordLabel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Contrasena</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="********"
           class="w-full px-3.5 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
       </div>
 
-      <!-- Error -->
       <div id="errorMsg" class="hidden text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2.5 rounded-lg"></div>
 
-      <!-- Info registro -->
       <div id="infoRegister" class="hidden text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
-        Tras registrarte puede que recibas un email de confirmación. Si no te llega, desactiva la confirmación en Supabase → Auth → Settings.
+        Tras registrarte puede que recibas un email de confirmacion. Si no te llega, revisa la configuracion de Auth en Supabase.
       </div>
 
-      <!-- Botón -->
       <button id="submitBtn" onclick="handleSubmit()"
-        class="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
-        <span id="btnText">Iniciar sesión</span>
+        class="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+        <span id="btnText">Iniciar sesion</span>
         <div id="btnSpinner" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+      </button>
+
+      <button id="forgotBtn" onclick="showTab('reset')"
+        class="w-full text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+        He olvidado mi contrasena
       </button>
     </div>
 
-    <!-- Modo oscuro -->
-    <div class="text-center mt-4">
-      <button onclick="toggleTheme()"
+    <div class="flex items-center justify-center gap-4 text-center mt-4">
+      <button id="themeBtn" onclick="toggleTheme()"
         class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-        Cambiar tema 🌙
+        Cambiar tema
       </button>
+      <button type="button" onclick="abrirAyudaAplicacion()" class="min-h-[40px] px-2 text-sm text-indigo-600 dark:text-indigo-400">Ayuda</button>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="./js/config.js"></script>
+  <script src="./js/layout.js"></script>
   <script>
     let currentTab = 'login'
 
-    // Si ya está autenticado, ir al dashboard
     ;(async () => {
+      const recoveryUrl = window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery')
       const { data: { session } } = await db.auth.getSession()
-      if (session) window.location.replace('./dashboard.html')
+      if (recoveryUrl) showTab('updatePassword')
+      else if (session) window.location.replace('./dashboard.html')
     })()
+
+    db.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') showTab('updatePassword')
+    })
 
     function showTab(tab) {
       currentTab = tab
       const isLogin = tab === 'login'
+      const isRegister = tab === 'register'
+      const isReset = tab === 'reset'
+      const isUpdatePassword = tab === 'updatePassword'
 
+      document.getElementById('tabs').classList.toggle('hidden', isUpdatePassword)
       document.getElementById('tabLogin').className =
         `flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${isLogin ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`
       document.getElementById('tabRegister').className =
-        `flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${!isLogin ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`
+        `flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${isRegister ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`
 
-      document.getElementById('btnText').textContent    = isLogin ? 'Iniciar sesión' : 'Registrarse'
-      document.getElementById('infoRegister').classList.toggle('hidden', isLogin)
+      document.getElementById('emailBox').classList.toggle('hidden', isUpdatePassword)
+      document.getElementById('passwordBox').classList.toggle('hidden', isReset)
+      document.getElementById('infoRegister').classList.toggle('hidden', !isRegister)
+      document.getElementById('forgotBtn').classList.toggle('hidden', !isLogin)
       document.getElementById('errorMsg').classList.add('hidden')
 
-      if (!isLogin) document.getElementById('password').autocomplete = 'new-password'
-      else          document.getElementById('password').autocomplete = 'current-password'
+      document.getElementById('passwordLabel').textContent = isUpdatePassword ? 'Nueva contrasena' : 'Contrasena'
+      document.getElementById('password').autocomplete = (isRegister || isUpdatePassword) ? 'new-password' : 'current-password'
+      document.getElementById('btnText').textContent =
+        isReset ? 'Enviar enlace de recuperacion' :
+        isUpdatePassword ? 'Guardar nueva contrasena' :
+        isLogin ? 'Iniciar sesion' : 'Registrarse'
     }
 
     async function handleSubmit() {
-      const email    = document.getElementById('email').value.trim()
+      const email = document.getElementById('email').value.trim()
       const password = document.getElementById('password').value
 
-      if (!email || !password) {
-        showError('errorMsg', 'Introduce email y contraseña.')
-        return
+      if (currentTab === 'reset') {
+        if (!email) return showError('Introduce tu email.')
+      } else if (currentTab === 'updatePassword') {
+        if (!password) return showError('Introduce la nueva contrasena.')
+      } else if (!email || !password) {
+        return showError('Introduce email y contrasena.')
       }
 
-      document.getElementById('submitBtn').disabled    = true
-      document.getElementById('btnSpinner').classList.remove('hidden')
-      document.getElementById('errorMsg').classList.add('hidden')
+      if (currentTab !== 'reset' && password.length < 6) {
+        return showError('La contrasena debe tener al menos 6 caracteres.')
+      }
 
+      setLoading(true)
       try {
         if (currentTab === 'login') {
           const { error } = await db.auth.signInWithPassword({ email, password })
           if (error) throw error
           window.location.replace('./dashboard.html')
-        } else {
-          const { data, error } = await db.auth.signUp({ email, password })
+        } else if (currentTab === 'register') {
+          const { data, error } = await db.auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: new URL('./dashboard.html', window.location.href).href },
+          })
           if (error) throw error
-          if (data.session) {
-            window.location.replace('./dashboard.html')
-          } else {
-            document.getElementById('errorMsg').textContent = '✅ Revisa tu email para confirmar la cuenta. Si no llega, desactiva la confirmación en Supabase.'
-            document.getElementById('errorMsg').className = 'text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-3 py-2.5 rounded-lg'
-            document.getElementById('errorMsg').classList.remove('hidden')
-          }
+          if (data.session) window.location.replace('./dashboard.html')
+          else showInfo('Cuenta creada. Revisa tu email para confirmarla. Despues vuelve aqui e inicia sesion.')
+        } else if (currentTab === 'reset') {
+          const { error } = await db.auth.resetPasswordForEmail(email, {
+            redirectTo: new URL('./index.html', window.location.href).href,
+          })
+          if (error) throw error
+          showInfo('Te he enviado un enlace para cambiar la contrasena. Revisa tu correo.')
+        } else if (currentTab === 'updatePassword') {
+          const { error } = await db.auth.updateUser({ password })
+          if (error) throw error
+          await db.auth.signOut()
+          window.history.replaceState({}, document.title, './index.html')
+          showTab('login')
+          showInfo('Contrasena actualizada. Ya puedes entrar con la nueva contrasena.')
         }
       } catch (err) {
         const msgs = {
-          'Invalid login credentials':      'Email o contraseña incorrectos.',
-          'Email not confirmed':             'Confirma tu email antes de entrar.',
-          'User already registered':         'Ya existe una cuenta con ese email.',
-          'Password should be at least 6':   'La contraseña debe tener al menos 6 caracteres.',
+          'Invalid login credentials': 'Email o contrasena incorrectos.',
+          'Email not confirmed': 'Confirma tu email antes de entrar.',
+          'User already registered': 'Ya existe una cuenta con ese email.',
+          'Signup is disabled': 'El registro esta desactivado en Supabase.',
+          'Email rate limit exceeded': 'Supabase ha limitado temporalmente los emails. Espera unos minutos.',
+          'Password should be at least 6': 'La contrasena debe tener al menos 6 caracteres.',
+          'New password should be different from the old password': 'La nueva contrasena debe ser distinta de la anterior.',
+          'Auth session missing': 'El enlace de recuperacion ha caducado. Pide otro email de recuperacion.',
         }
-        const msg = Object.entries(msgs).find(([k]) => err.message?.includes(k))?.[1] || err.message
-        showError('errorMsg', msg)
+        showError(Object.entries(msgs).find(([k]) => err.message?.includes(k))?.[1] || err.message)
       } finally {
-        document.getElementById('submitBtn').disabled = false
-        document.getElementById('btnSpinner').classList.add('hidden')
+        setLoading(false)
       }
     }
 
-    function showError(id, msg) {
-      const el = document.getElementById(id)
+    function setLoading(active) {
+      document.getElementById('submitBtn').disabled = active
+      document.getElementById('btnSpinner').classList.toggle('hidden', !active)
+      if (active) document.getElementById('errorMsg').classList.add('hidden')
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg')
       el.textContent = msg
       el.className = 'text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2.5 rounded-lg'
       el.classList.remove('hidden')
     }
 
-    // Enviar con Enter
+    function showInfo(msg) {
+      const el = document.getElementById('errorMsg')
+      el.textContent = msg
+      el.className = 'text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-3 py-2.5 rounded-lg'
+      el.classList.remove('hidden')
+    }
+
     document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleSubmit()
+      if (e.key === 'Enter' && !document.getElementById('ayudaDialog')?.open) handleSubmit()
     })
   </script>
 </body>

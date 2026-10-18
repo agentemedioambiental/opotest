@@ -13,6 +13,7 @@
 
   <main class="max-w-2xl mx-auto px-4 pt-4 pb-24 space-y-4">
     <p class="text-[10px] text-gray-300 px-1">Importar v20260506-10</p>
+    <button type="button" onclick="abrirAyudaAplicacion('generar')" class="inline-flex items-center min-h-[40px] text-sm font-medium text-indigo-600 dark:text-indigo-400">Generar preguntas con IA</button>
 
     <div class="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
       <button id="tabExcel" onclick="showTab('excel')" class="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors">Excel de temas</button>
@@ -47,7 +48,8 @@
         <ul class="text-xs text-purple-700 dark:text-purple-300 space-y-1">
           <li>Nombre del archivo: CODIGO_nombre.txt, por ejemplo C001_CONSTITUCION.txt.</li>
           <li>Formato: numero | pregunta | a | b | c | d | correcta | explicacion</li>
-          <li>Importa primero el Excel de temas.</li>
+          <li>TXT sin cabecera o con cabecera. Una pregunta por linea.</li>
+          <li>Crea los temas o importa su Excel antes de cargar preguntas.</li>
         </ul>
       </div>
 
