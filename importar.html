@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Importar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+  <header id="appHeader"></header>
+
+  <main class="max-w-2xl mx-auto px-4 pt-4 pb-24 space-y-4">
+
+    <!-- Tabs -->
+    <div class="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
+      <button id="tabExcel" onclick="showTab('excel')"
+        class="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white flex items-center justify-center gap-1.5">
+        📊 Excel de temas
+      </button>
+      <button id="tabTxt" onclick="showTab('txt')"
+        class="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1.5">
+        📄 TXT preguntas
+      </button>
+    </div>
+
+    <!-- ═══ PANEL EXCEL ═══ -->
+    <div id="panelExcel" class="space-y-4">
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-4 flex gap-3">
+        <span class="text-blue-500 text-lg shrink-0">ℹ️</span>
+        <ul class="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+          <li>• Archivo <strong>.xlsx</strong> con columnas: <code>grupo | codigo | tema</code></li>
+          <li>• El código identifica el tema (ej: C001). Debe ser único.</li>
+          <li>• Los temas ya existentes no se duplican.</li>
+        </ul>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seleccionar archivo Excel</label>
+        <input id="fileExcel" type="file" accept=".xlsx,.xls"
+          class="block w-full text-sm text-gray-500 dark:text-gray-400 cursor-pointer">
+        <p id="fileExcelName" class="hidden mt-1.5 text-xs text-gray-400 truncate"></p>
+      </div>
+
+      <button id="btnImportarExcel" onclick="importarExcel()"
+        class="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:pointer-events-none text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+        disabled>
+        <span>Importar temas</span>
+        <div id="spinnerExcel" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+      </button>
+
+      <div id="resultadoExcel" class="hidden"></div>
+    </div>
+
+    <!-- ═══ PANEL TXT ═══ -->
+    <div id="panelTxt" class="hidden space-y-4">
+      <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded-xl p-4 flex gap-3">
+        <span class="text-purple-500 text-lg shrink-0">ℹ️</span>
+        <ul class="text-xs text-purple-700 dark:text-purple-300 space-y-1">
+          <li>• Nombre del archivo: <code>CODIGO_nombre.txt</code> (ej: C001_CONSTITUCION.txt)</li>
+          <li>• Formato por línea: <code>nº | pregunta | a | b | c | d | correcta | explicación</code></li>
+          <li>• La primera línea es cabecera y se ignora.</li>
+          <li>• Puedes subir varios archivos a la vez.</li>
+          <li>• Los duplicados se detectan automáticamente.</li>
+        </ul>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seleccionar archivos TXT</label>
+        <input id="fileTxt" type="file" accept=".txt" multiple
+          class="block w-full text-sm text-gray-500 dark:text-gray-400 cursor-pointer">
+        <div id="fileTxtNames" class="hidden mt-2 space-y-0.5"></div>
+      </div>
+
+      <button id="btnImportarTxt" onclick="importarTxt()"
+        class="w-full min-h-[48px] bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:pointer-events-none text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+        disabled>
+        <span id="btnTxtLabel">Importar preguntas</span>
+        <div id="spinnerTxt" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+      </button>
+
+      <div id="resultadoTxt" class="hidden space-y-2"></div>
+    </div>
+
+  </main>
+
+  <nav id="bottomNav"></nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/layout.js"></script>
+  <script src="./js/hash.js"></script>
+  <script src="./js/txtParser.js"></script>
+  <script src="./js/excel.js"></script>
+  <script>
+    (async () => {
+      await requireAuth()
+      initLayout('importar', 'Importar', './dashboard.html')
+
+      // Listeners file inputs
+      document.getElementById('fileExcel').addEventListener('change', e => {
+        const f = e.target.files?.[0]
+        const nameEl = document.getElementById('fileExcelName')
+        if (f) {
+          nameEl.textContent = '📄 ' + f.name
+          nameEl.classList.remove('hidden')
+        } else {
+          nameEl.classList.add('hidden')
+        }
+        document.getElementById('btnImportarExcel').disabled = !f
+        document.getElementById('resultadoExcel').classList.add('hidden')
+      })
+
+      document.getElementById('fileTxt').addEventListener('change', e => {
+        const files = Array.from(e.target.files || [])
+        const cont  = document.getElementById('fileTxtNames')
+        if (files.length) {
+          cont.innerHTML = files.map(f => `<p class="text-xs text-gray-400 truncate">📄 ${f.name}</p>`).join('')
+          cont.classList.remove('hidden')
+          document.getElementById('btnTxtLabel').textContent = `Importar ${files.length} archivo${files.length > 1 ? 's' : ''}`
+        } else {
+          cont.classList.add('hidden')
+          document.getElementById('btnTxtLabel').textContent = 'Importar preguntas'
+        }
+        document.getElementById('btnImportarTxt').disabled = files.length === 0
+        document.getElementById('resultadoTxt').classList.add('hidden')
+      })
+    })()
+
+    let currentTab = 'excel'
+    function showTab(tab) {
+      currentTab = tab
+      const isExcel = tab === 'excel'
+      document.getElementById('panelExcel').classList.toggle('hidden', !isExcel)
+      document.getElementById('panelTxt').classList.toggle('hidden', isExcel)
+      document.getElementById('tabExcel').className = `flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5
+        ${isExcel ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`
+      document.getElementById('tabTxt').className = `flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5
+        ${!isExcel ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`
+    }
+
+    // ── Importar Excel ────────────────────────────────────
+    async function importarExcel() {
+      const file = document.getElementById('fileExcel').files?.[0]
+      if (!file) return
+
+      document.getElementById('btnImportarExcel').disabled = true
+      document.getElementById('spinnerExcel').classList.remove('hidden')
+
+      try {
+        const { temas, errores } = await parsearExcelTemas(file)
+        if (temas.length === 0) { toast('No se encontraron filas válidas', 'error'); return }
+
+        const { data: existentes } = await db.from('temas').select('codigo')
+        const codigos = new Set((existentes || []).map(t => t.codigo))
+        const nuevos  = temas.filter(t => !codigos.has(t.codigo))
+        const duplic  = temas.filter(t =>  codigos.has(t.codigo))
+
+        if (nuevos.length > 0) {
+          const { error } = await db.from('temas').insert(nuevos)
+          if (error) throw error
+        }
+
+        mostrarResultadoExcel({ total: temas.length, insertados: nuevos.length, duplicados: duplic.length, errores })
+      } catch (e) {
+        toast('Error: ' + e.message, 'error')
+      } finally {
+        document.getElementById('btnImportarExcel').disabled = false
+        document.getElementById('spinnerExcel').classList.add('hidden')
+      }
+    }
+
+    function mostrarResultadoExcel({ total, insertados, duplicados, errores }) {
+      const cont = document.getElementById('resultadoExcel')
+      cont.classList.remove('hidden')
+      cont.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+          <p class="font-semibold flex items-center gap-2">✅ Importación completada</p>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div><p class="text-2xl font-bold text-gray-800 dark:text-white">${total}</p><p class="text-[10px] text-gray-400">Total</p></div>
+            <div><p class="text-2xl font-bold text-green-600">${insertados}</p><p class="text-[10px] text-gray-400">Nuevos</p></div>
+            <div><p class="text-2xl font-bold text-yellow-600">${duplicados}</p><p class="text-[10px] text-gray-400">Existentes</p></div>
+          </div>
+          ${errores.length ? `<details class="text-sm"><summary class="text-red-500 cursor-pointer">${errores.length} errores</summary>
+            <ul class="mt-1 space-y-0.5">${errores.map(e => `<li class="text-red-400 text-xs">${e}</li>`).join('')}</ul></details>` : ''}
+        </div>`
+    }
+
+    // ── Importar TXT ──────────────────────────────────────
+    async function importarTxt() {
+      const files = Array.from(document.getElementById('fileTxt').files || [])
+      if (!files.length) return
+
+      document.getElementById('btnImportarTxt').disabled = true
+      document.getElementById('spinnerTxt').classList.remove('hidden')
+      document.getElementById('resultadoTxt').classList.add('hidden')
+
+      const resultados = []
+
+      for (const file of files) {
+        const r = { archivo: file.name, codigo: extraerCodigo(file.name), total: 0, insertadas: 0, duplicadas: 0, errores: [] }
+        try {
+          const contenido = await leerArchivo(file)
+          const { preguntas, errores } = parsearTxt(contenido)
+          r.total  = preguntas.length
+          r.errores = [...errores]
+
+          const { data: temaData } = await db.from('temas').select('id').eq('codigo', r.codigo).maybeSingle()
+
+          for (const p of preguntas) {
+            const hash = await generarHash(`${r.codigo}|${p.pregunta}|${p.opcion_a}|${p.opcion_b}|${p.opcion_c}|${p.opcion_d}`)
+            const { data: existe } = await db.from('preguntas').select('id').eq('hash_unico', hash).maybeSingle()
+            if (existe) { r.duplicadas++; continue }
+
+            const { error } = await db.from('preguntas').insert({
+              tema_id: temaData?.id ?? null, codigo_tema: r.codigo,
+              pregunta: p.pregunta, opcion_a: p.opcion_a, opcion_b: p.opcion_b,
+              opcion_c: p.opcion_c, opcion_d: p.opcion_d,
+              respuesta_correcta: p.respuesta_correcta, explicacion: p.explicacion,
+              hash_unico: hash, activa: true, eliminada: false,
+            })
+            if (error) {
+              if (error.code === '23505') r.duplicadas++
+              else r.errores.push(`P${p.numero}: ${error.message}`)
+            } else { r.insertadas++ }
+          }
+        } catch (e) { r.errores.push(String(e)) }
+        resultados.push(r)
+      }
+
+      mostrarResultadosTxt(resultados)
+      document.getElementById('btnImportarTxt').disabled = false
+      document.getElementById('spinnerTxt').classList.add('hidden')
+    }
+
+    function mostrarResultadosTxt(resultados) {
+      const cont = document.getElementById('resultadoTxt')
+      cont.classList.remove('hidden')
+
+      const total = { total: 0, insertadas: 0, duplicadas: 0 }
+      resultados.forEach(r => { total.total += r.total; total.insertadas += r.insertadas; total.duplicadas += r.duplicadas })
+
+      cont.innerHTML = resultados.map(r => `
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 space-y-2">
+          <div class="flex items-center gap-2">
+            <span>${r.errores.length ? '⚠️' : '✅'}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate">${r.archivo}</p>
+              <span class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full">${r.codigo}</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div><p class="text-xl font-bold text-gray-800 dark:text-white">${r.total}</p><p class="text-[10px] text-gray-400">Total</p></div>
+            <div><p class="text-xl font-bold text-green-600">${r.insertadas}</p><p class="text-[10px] text-gray-400">Nuevas</p></div>
+            <div><p class="text-xl font-bold text-yellow-600">${r.duplicadas}</p><p class="text-[10px] text-gray-400">Duplic.</p></div>
+          </div>
+          ${r.errores.length ? `<details class="text-xs"><summary class="text-red-500 cursor-pointer">${r.errores.length} errores</summary>
+            <ul class="mt-1">${r.errores.slice(0,5).map(e=>`<li class="text-red-400">${e}</li>`).join('')}
+            ${r.errores.length > 5 ? `<li class="text-gray-400">…y ${r.errores.length-5} más</li>` : ''}</ul></details>` : ''}
+        </div>`).join('') + `
+        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 p-3">
+          <p class="text-sm font-semibold mb-2">Total importado</p>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div><p class="text-xl font-bold">${total.total}</p><p class="text-[10px] text-gray-400">Total</p></div>
+            <div><p class="text-xl font-bold text-green-600">${total.insertadas}</p><p class="text-[10px] text-gray-400">Nuevas</p></div>
+            <div><p class="text-xl font-bold text-yellow-600">${total.duplicadas}</p><p class="text-[10px] text-gray-400">Duplic.</p></div>
+          </div>
+        </div>`
+    }
+  </script>
+</body>
+</html>

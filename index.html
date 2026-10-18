@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Acceso</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-sm animate-fade">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="text-5xl mb-3">📚</div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">OpoTest</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Prepara tus oposiciones</p>
+    </div>
+
+    <!-- Tabs login/registro -->
+    <div class="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
+      <button id="tabLogin" onclick="showTab('login')"
+        class="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white">
+        Iniciar sesión
+      </button>
+      <button id="tabRegister" onclick="showTab('register')"
+        class="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-500 dark:text-gray-400">
+        Registrarse
+      </button>
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+
+      <!-- Email -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
+        <input id="email" type="email" autocomplete="email" placeholder="tu@email.com"
+          class="w-full px-3.5 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Contraseña</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••"
+          class="w-full px-3.5 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+      </div>
+
+      <!-- Error -->
+      <div id="errorMsg" class="hidden text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2.5 rounded-lg"></div>
+
+      <!-- Info registro -->
+      <div id="infoRegister" class="hidden text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
+        Tras registrarte puede que recibas un email de confirmación. Si no te llega, desactiva la confirmación en Supabase → Auth → Settings.
+      </div>
+
+      <!-- Botón -->
+      <button id="submitBtn" onclick="handleSubmit()"
+        class="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+        <span id="btnText">Iniciar sesión</span>
+        <div id="btnSpinner" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+      </button>
+    </div>
+
+    <!-- Modo oscuro -->
+    <div class="text-center mt-4">
+      <button onclick="toggleTheme()"
+        class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+        Cambiar tema 🌙
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script>
+    let currentTab = 'login'
+
+    // Si ya está autenticado, ir al dashboard
+    ;(async () => {
+      const { data: { session } } = await db.auth.getSession()
+      if (session) window.location.replace('./dashboard.html')
+    })()
+
+    function showTab(tab) {
+      currentTab = tab
+      const isLogin = tab === 'login'
+
+      document.getElementById('tabLogin').className =
+        `flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${isLogin ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`
+      document.getElementById('tabRegister').className =
+        `flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${!isLogin ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`
+
+      document.getElementById('btnText').textContent    = isLogin ? 'Iniciar sesión' : 'Registrarse'
+      document.getElementById('infoRegister').classList.toggle('hidden', isLogin)
+      document.getElementById('errorMsg').classList.add('hidden')
+
+      if (!isLogin) document.getElementById('password').autocomplete = 'new-password'
+      else          document.getElementById('password').autocomplete = 'current-password'
+    }
+
+    async function handleSubmit() {
+      const email    = document.getElementById('email').value.trim()
+      const password = document.getElementById('password').value
+
+      if (!email || !password) {
+        showError('errorMsg', 'Introduce email y contraseña.')
+        return
+      }
+
+      document.getElementById('submitBtn').disabled    = true
+      document.getElementById('btnSpinner').classList.remove('hidden')
+      document.getElementById('errorMsg').classList.add('hidden')
+
+      try {
+        if (currentTab === 'login') {
+          const { error } = await db.auth.signInWithPassword({ email, password })
+          if (error) throw error
+          window.location.replace('./dashboard.html')
+        } else {
+          const { data, error } = await db.auth.signUp({ email, password })
+          if (error) throw error
+          if (data.session) {
+            window.location.replace('./dashboard.html')
+          } else {
+            document.getElementById('errorMsg').textContent = '✅ Revisa tu email para confirmar la cuenta. Si no llega, desactiva la confirmación en Supabase.'
+            document.getElementById('errorMsg').className = 'text-sm text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 px-3 py-2.5 rounded-lg'
+            document.getElementById('errorMsg').classList.remove('hidden')
+          }
+        }
+      } catch (err) {
+        const msgs = {
+          'Invalid login credentials':      'Email o contraseña incorrectos.',
+          'Email not confirmed':             'Confirma tu email antes de entrar.',
+          'User already registered':         'Ya existe una cuenta con ese email.',
+          'Password should be at least 6':   'La contraseña debe tener al menos 6 caracteres.',
+        }
+        const msg = Object.entries(msgs).find(([k]) => err.message?.includes(k))?.[1] || err.message
+        showError('errorMsg', msg)
+      } finally {
+        document.getElementById('submitBtn').disabled = false
+        document.getElementById('btnSpinner').classList.add('hidden')
+      }
+    }
+
+    function showError(id, msg) {
+      const el = document.getElementById(id)
+      el.textContent = msg
+      el.className = 'text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2.5 rounded-lg'
+      el.classList.remove('hidden')
+    }
+
+    // Enviar con Enter
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSubmit()
+    })
+  </script>
+</body>
+</html>

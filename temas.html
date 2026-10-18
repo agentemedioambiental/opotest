@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Temas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+  <header id="appHeader"></header>
+
+  <main class="max-w-2xl mx-auto px-4 pt-4 pb-24 space-y-4">
+
+    <!-- Buscador -->
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+      <input id="searchInput" type="search" placeholder="Buscar tema o código…"
+        class="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    </div>
+
+    <!-- Filtro grupos -->
+    <div id="gruposFiltro" class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4"></div>
+
+    <!-- Resumen -->
+    <p id="resumen" class="text-xs text-gray-400 px-1"></p>
+
+    <!-- Spinner -->
+    <div id="spinner" class="flex justify-center py-16"><div class="spinner"></div></div>
+
+    <!-- Lista temas -->
+    <div id="lista" class="hidden space-y-5"></div>
+
+    <!-- Empty state -->
+    <div id="empty" class="hidden text-center py-12">
+      <p class="text-4xl mb-3">📖</p>
+      <p class="font-medium text-gray-600 dark:text-gray-400">No hay temas</p>
+      <p class="text-sm text-gray-400 mt-1" id="emptyMsg">Importa el Excel de temas primero.</p>
+      <a href="./importar.html" id="emptyLink" class="inline-block mt-4 text-indigo-600 dark:text-indigo-400 text-sm font-medium">Ir a Importar →</a>
+    </div>
+
+  </main>
+
+  <nav id="bottomNav"></nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/layout.js"></script>
+  <script>
+    let todosLosTemas = []
+    let grupoActivo   = ''
+
+    (async () => {
+      await requireAuth()
+      initLayout('temas', 'Temas', './dashboard.html')
+      await cargarTemas()
+
+      document.getElementById('searchInput').addEventListener('input', renderLista)
+    })()
+
+    async function cargarTemas() {
+      try {
+        const { data, error } = await db.from('temas')
+          .select('*, preguntas_count:preguntas(count)')
+          .order('grupo').order('codigo')
+        if (error) throw error
+
+        todosLosTemas = (data || []).map(t => ({
+          ...t,
+          preguntas_count: t.preguntas_count?.[0]?.count ?? 0,
+        }))
+
+        renderGrupos()
+        renderLista()
+      } catch (e) {
+        console.error(e)
+        toast('Error al cargar temas', 'error')
+      } finally {
+        document.getElementById('spinner').classList.add('hidden')
+      }
+    }
+
+    function renderGrupos() {
+      const grupos = [...new Set(todosLosTemas.map(t => t.grupo))]
+      if (grupos.length <= 1) return
+
+      const cont = document.getElementById('gruposFiltro')
+      cont.innerHTML = ['', ...grupos].map(g => `
+        <button onclick="setGrupo('${g}')"
+          class="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors
+                 ${g === grupoActivo ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}"
+          data-grupo="${g}">
+          ${g || 'Todos'}
+        </button>`).join('')
+    }
+
+    function setGrupo(g) {
+      grupoActivo = g
+      document.querySelectorAll('#gruposFiltro button').forEach(btn => {
+        const active = btn.dataset.grupo === g
+        btn.className = `shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors
+          ${active ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`
+      })
+      renderLista()
+    }
+
+    function renderLista() {
+      const busqueda = document.getElementById('searchInput').value.toLowerCase()
+
+      const filtrados = todosLosTemas.filter(t => {
+        const okGrupo   = !grupoActivo || t.grupo === grupoActivo
+        const okSearch  = !busqueda || t.tema.toLowerCase().includes(busqueda) || t.codigo.toLowerCase().includes(busqueda)
+        return okGrupo && okSearch
+      })
+
+      const lista  = document.getElementById('lista')
+      const empty  = document.getElementById('empty')
+      const resumen = document.getElementById('resumen')
+
+      resumen.textContent = `${filtrados.length} tema${filtrados.length !== 1 ? 's' : ''} · ${filtrados.reduce((s,t) => s + (t.preguntas_count||0), 0).toLocaleString('es-ES')} preguntas`
+
+      if (filtrados.length === 0) {
+        lista.classList.add('hidden')
+        empty.classList.remove('hidden')
+        document.getElementById('emptyMsg').textContent = todosLosTemas.length === 0
+          ? 'Importa el Excel de temas primero.'
+          : 'Sin resultados para esa búsqueda.'
+        document.getElementById('emptyLink').style.display = todosLosTemas.length === 0 ? '' : 'none'
+        return
+      }
+
+      empty.classList.add('hidden')
+      lista.classList.remove('hidden')
+
+      // Agrupar
+      const porGrupo = filtrados.reduce((acc, t) => {
+        (acc[t.grupo] = acc[t.grupo] || []).push(t)
+        return acc
+      }, {})
+
+      lista.innerHTML = Object.entries(porGrupo).map(([grupo, temas]) => `
+        <div>
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">${grupo}</h2>
+          <div class="space-y-2">
+            ${temas.map(t => `
+              <a href="./test.html?temas=${t.id}" class="block card-link">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center gap-3">
+                  <div class="bg-indigo-100 dark:bg-indigo-900/30 rounded-lg p-2 shrink-0">📖</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="mb-0.5">
+                      <span class="text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full">${t.codigo}</span>
+                    </div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white leading-snug">${t.tema}</p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <p class="text-lg font-bold text-gray-700 dark:text-gray-300">${(t.preguntas_count||0).toLocaleString('es-ES')}</p>
+                    <p class="text-[10px] text-gray-400">pregs.</p>
+                  </div>
+                  <span class="text-gray-300 dark:text-gray-600">›</span>
+                </div>
+              </a>`).join('')}
+          </div>
+        </div>`).join('')
+    }
+  </script>
+</body>
+</html>

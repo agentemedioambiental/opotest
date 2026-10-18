@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Resultados</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+  <header id="appHeader"></header>
+
+  <main class="max-w-2xl mx-auto px-4 pt-4 pb-24 space-y-4">
+
+    <div id="spinner" class="flex justify-center py-20"><div class="spinner"></div></div>
+    <div id="contenido" class="hidden space-y-4 animate-slide"></div>
+
+  </main>
+
+  <nav id="bottomNav"></nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/layout.js"></script>
+  <script>
+    (async () => {
+      await requireAuth()
+      initLayout('dashboard', 'Resultados', './dashboard.html')
+
+      const id = getParam('id')
+      if (!id) { window.location.replace('./dashboard.html'); return }
+
+      eliminarSesion(id)
+
+      try {
+        const [{ data: intento }, { data: respuestas }] = await Promise.all([
+          db.from('intentos_test').select('*').eq('id', id).single(),
+          db.from('respuestas_usuario').select('*, pregunta:preguntas(*)').eq('intento_test_id', id),
+        ])
+
+        if (!intento) { window.location.replace('./dashboard.html'); return }
+
+        document.getElementById('spinner').classList.add('hidden')
+        renderResultados(intento, respuestas || [])
+      } catch (e) {
+        toast('Error al cargar resultados', 'error')
+      }
+    })()
+
+    function renderResultados(intento, respuestas) {
+      const { aciertos, errores, eliminadas, total_validas, porcentaje } = intento
+      const cont = document.getElementById('contenido')
+      cont.classList.remove('hidden')
+
+      const colorTxt = porcentaje >= 70 ? 'text-green-600 dark:text-green-400'
+        : porcentaje >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-500 dark:text-red-400'
+      const colorBar = porcentaje >= 70 ? 'bg-green-500' : porcentaje >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+
+      cont.innerHTML = `
+        <!-- Nota -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 text-center">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Resultado</p>
+          <p class="text-6xl font-extrabold ${colorTxt}">${porcentaje}%</p>
+          <p class="text-xs text-gray-400 mt-1">${fmtFecha(intento.fecha)}</p>
+          <div class="progress-track mt-4 max-w-xs mx-auto"><div class="progress-fill ${colorBar}" style="width:${porcentaje}%"></div></div>
+        </div>
+
+        <!-- Stats 4 col -->
+        <div class="grid grid-cols-4 gap-2">
+          ${miniStat('Total', total_validas)}
+          ${miniStat('Aciertos', aciertos, 'text-green-600', '✓')}
+          ${miniStat('Fallos', errores, 'text-red-500', '✗')}
+          ${miniStat('Omitidas', eliminadas, 'text-gray-400', '○')}
+        </div>
+
+        <!-- Acciones -->
+        <div class="grid grid-cols-2 gap-3">
+          <a href="./test.html"
+            class="flex items-center justify-center gap-2 min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm">
+            🔄 Nuevo test
+          </a>
+          <a href="./dashboard.html"
+            class="flex items-center justify-center gap-2 min-h-[44px] bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-xl transition-colors text-sm">
+            🏠 Inicio
+          </a>
+        </div>
+
+        <!-- Filtro detalle -->
+        <div>
+          <div id="filtrosBtns" class="flex gap-2 mb-3">
+            <button onclick="filtrar('falladas')" data-f="falladas"
+              class="filtro-btn px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600 text-white">
+              Falladas (${errores})
+            </button>
+            <button onclick="filtrar('acertadas')" data-f="acertadas"
+              class="filtro-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500">
+              Acertadas (${aciertos})
+            </button>
+            <button onclick="filtrar('todas')" data-f="todas"
+              class="filtro-btn px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500">
+              Todas
+            </button>
+          </div>
+          <div id="listaRespuestas" class="space-y-2"></div>
+        </div>`
+
+      window._respuestas = respuestas
+      filtrar('falladas')
+    }
+
+    function filtrar(modo) {
+      document.querySelectorAll('.filtro-btn').forEach(b => {
+        const active = b.dataset.f === modo
+        b.className = `filtro-btn px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+          ${active ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`
+      })
+
+      const lista = (window._respuestas || []).filter(r => {
+        if (modo === 'falladas')  return r.correcta === false && !r.eliminada
+        if (modo === 'acertadas') return r.correcta === true
+        return true
+      })
+
+      const cont = document.getElementById('listaRespuestas')
+      if (!lista.length) {
+        cont.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">
+          ${modo === 'falladas' ? '🎉 ¡No fallaste ninguna!' : 'Sin resultados.'}
+        </div>`
+        return
+      }
+      cont.innerHTML = lista.map((r, i) => tarjetaRespuesta(r, i + 1)).join('')
+    }
+
+    function tarjetaRespuesta(r, num) {
+      const p = r.pregunta
+      if (!p) return ''
+      const icon = r.eliminada ? '🚫' : r.correcta ? '✅' : '❌'
+      const border = r.eliminada ? 'border-l-gray-300' : r.correcta ? 'border-l-green-400' : 'border-l-red-400'
+      const id = `det_${r.id}`
+
+      const opciones = ['a','b','c','d'].map(op => {
+        const texto = p[`opcion_${op}`]
+        const esCorrecta = op === p.respuesta_correcta
+        const esMia = op === r.respuesta && !esCorrecta
+        const cls = esCorrecta
+          ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-medium'
+          : esMia ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+          : 'text-gray-500 dark:text-gray-400'
+        return `<div class="flex items-start gap-2 text-xs rounded-lg px-2.5 py-2 ${cls}">
+          <span class="font-bold shrink-0">${op.toUpperCase()}.</span>
+          <span class="leading-relaxed">${texto}</span>
+          ${esCorrecta ? '<span class="ml-auto shrink-0">✓</span>' : ''}
+        </div>`
+      }).join('')
+
+      return `
+        <div class="bg-white dark:bg-gray-800 rounded-xl border-l-4 ${border} border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <button onclick="document.getElementById('${id}').classList.toggle('hidden')"
+            class="w-full flex items-start gap-3 px-4 py-3 text-left">
+            <span class="shrink-0 mt-0.5">${icon}</span>
+            <p class="flex-1 text-sm text-gray-800 dark:text-gray-200 leading-snug">
+              <span class="text-gray-400 mr-1">${num}.</span>${p.pregunta}
+            </p>
+            <span class="text-gray-300 shrink-0 mt-0.5">▼</span>
+          </button>
+          <div id="${id}" class="hidden px-4 pb-3 space-y-1.5 border-t border-gray-50 dark:border-gray-700 pt-2 animate-fade">
+            ${opciones}
+            ${p.explicacion ? `<div class="mt-1 px-3 py-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-800 dark:text-amber-200 leading-relaxed"><strong>💡 </strong>${p.explicacion}</div>` : ''}
+            <span class="inline-block text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full">${p.codigo_tema}</span>
+          </div>
+        </div>`
+    }
+
+    function miniStat(label, val, color = 'text-gray-800 dark:text-white', icon = '') {
+      return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-2 text-center">
+        <p class="text-xl font-bold ${color}">${icon}${val}</p>
+        <p class="text-[10px] text-gray-400">${label}</p>
+      </div>`
+    }
+  </script>
+</body>
+</html>

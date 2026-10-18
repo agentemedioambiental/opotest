@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Estadísticas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+  <header id="appHeader"></header>
+
+  <main class="max-w-2xl mx-auto px-4 pt-4 pb-24 space-y-4">
+
+    <!-- Resumen global -->
+    <div id="resumenGlobal" class="grid grid-cols-3 gap-2"></div>
+
+    <!-- Filtros grupo -->
+    <div id="gruposFiltro" class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4"></div>
+
+    <!-- Orden -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-xs text-gray-400">Ordenar:</span>
+      <button onclick="setOrden('tasa_asc')"  data-o="tasa_asc"  class="orden-btn activo px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-600 text-white">Más falladas</button>
+      <button onclick="setOrden('tasa_desc')" data-o="tasa_desc" class="orden-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500">Más acertadas</button>
+      <button onclick="setOrden('vistas')"    data-o="vistas"    class="orden-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500">Más vistas</button>
+    </div>
+
+    <!-- Spinner -->
+    <div id="spinner" class="flex justify-center py-12"><div class="spinner"></div></div>
+
+    <!-- Empty -->
+    <div id="empty" class="hidden text-center py-12">
+      <p class="text-4xl mb-3">📊</p>
+      <p class="text-gray-400 text-sm">Sin datos aún.<br>Realiza tests para ver estadísticas.</p>
+    </div>
+
+    <!-- Lista -->
+    <div>
+      <p id="numStats" class="text-xs text-gray-400 px-1 mb-2"></p>
+      <div id="listaStats" class="space-y-2"></div>
+    </div>
+
+  </main>
+
+  <nav id="bottomNav"></nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/layout.js"></script>
+  <script>
+    let statsData  = []
+    let grupoActivo = ''
+    let ordenActivo = 'tasa_asc'
+
+    (async () => {
+      await requireAuth()
+      initLayout('estadisticas', 'Estadísticas', './dashboard.html')
+      await cargarResumen()
+      await cargarStats()
+    })()
+
+    async function cargarResumen() {
+      try {
+        const [{ count: total }, { count: elim }, { data: intentos }] = await Promise.all([
+          db.from('preguntas').select('*', { count: 'exact', head: true }).eq('activa', true),
+          db.from('preguntas').select('*', { count: 'exact', head: true }).eq('eliminada', true).eq('activa', true),
+          db.from('intentos_test').select('aciertos, total_validas').eq('completado', true),
+        ])
+        const respondidas = intentos?.reduce((s, i) => s + (i.total_validas || 0), 0) ?? 0
+        const aciertos    = intentos?.reduce((s, i) => s + (i.aciertos    || 0), 0) ?? 0
+        const media = respondidas > 0 ? Math.round(aciertos / respondidas * 100) : 0
+
+        document.getElementById('resumenGlobal').innerHTML = `
+          ${miniCard('Tests', intentos?.length ?? 0, 'text-indigo-600 dark:text-indigo-400')}
+          ${miniCard('Respondidas', respondidas.toLocaleString('es-ES'), 'text-gray-800 dark:text-white')}
+          ${miniCard('Media', media + '%', colorPct(media))}`
+      } catch (e) { console.error(e) }
+    }
+
+    async function cargarStats() {
+      document.getElementById('spinner').classList.remove('hidden')
+      document.getElementById('listaStats').innerHTML = ''
+      try {
+        const { data, error } = await db.from('estadisticas_preguntas').select('*')
+        if (error) throw error
+
+        statsData = (data || []).filter(s => Number(s.veces_mostrada) > 0)
+
+        // Grupos únicos para filtro
+        const grupos = [...new Set(statsData.map(s => s.grupo).filter(Boolean))]
+        if (grupos.length > 1) {
+          document.getElementById('gruposFiltro').innerHTML =
+            ['', ...grupos].map(g => `
+              <button onclick="setGrupo('${g}')" data-grupo="${g}"
+                class="grupo-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+                  ${g === grupoActivo ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}">
+                ${g || 'Todos'}
+              </button>`).join('')
+        }
+
+        renderStats()
+      } catch (e) {
+        toast('Error al cargar estadísticas', 'error')
+      } finally {
+        document.getElementById('spinner').classList.add('hidden')
+      }
+    }
+
+    function setGrupo(g) {
+      grupoActivo = g
+      document.querySelectorAll('.grupo-btn').forEach(b => {
+        b.className = `grupo-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+          ${b.dataset.grupo === g ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`
+      })
+      renderStats()
+    }
+
+    function setOrden(o) {
+      ordenActivo = o
+      document.querySelectorAll('.orden-btn').forEach(b => {
+        b.className = `orden-btn px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
+          ${b.dataset.o === o ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`
+      })
+      renderStats()
+    }
+
+    function renderStats() {
+      let datos = statsData.filter(s => !grupoActivo || s.grupo === grupoActivo)
+
+      datos = [...datos].sort((a, b) => {
+        if (ordenActivo === 'tasa_asc')  return Number(a.tasa_acierto) - Number(b.tasa_acierto)
+        if (ordenActivo === 'tasa_desc') return Number(b.tasa_acierto) - Number(a.tasa_acierto)
+        return Number(b.veces_mostrada) - Number(a.veces_mostrada)
+      })
+
+      const empty = document.getElementById('empty')
+      const lista  = document.getElementById('listaStats')
+      document.getElementById('numStats').textContent = `${datos.length} preguntas con historial`
+
+      if (!datos.length) { empty.classList.remove('hidden'); lista.innerHTML = ''; return }
+      empty.classList.add('hidden')
+
+      lista.innerHTML = datos.map(s => {
+        const tasa   = Number(s.tasa_acierto)
+        const colorB = tasa >= 70 ? 'bg-green-500' : tasa >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+        const colorT = colorPct(tasa)
+        const icon   = tasa >= 70 ? '📈' : tasa >= 50 ? '➡️' : '📉'
+        const detId  = `st_${s.pregunta_id}`
+        return `
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <button onclick="document.getElementById('${detId}').classList.toggle('hidden')"
+              class="w-full flex items-start gap-3 px-4 py-3 text-left">
+              <span class="shrink-0 mt-0.5">${icon}</span>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 mb-1">
+                  <span class="text-[9px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium">${s.codigo_tema}</span>
+                  <span class="text-[10px] text-gray-400 truncate">${s.tema || ''}</span>
+                </div>
+                <p class="text-sm text-gray-800 dark:text-gray-200 leading-snug line-clamp-2">${s.pregunta}</p>
+                <div class="flex items-center gap-2 mt-2">
+                  <div class="progress-track flex-1"><div class="progress-fill ${colorB}" style="width:${tasa}%"></div></div>
+                  <span class="text-sm font-bold ${colorT} min-w-[38px] text-right">${tasa}%</span>
+                </div>
+              </div>
+            </button>
+            <div id="${detId}" class="hidden border-t border-gray-50 dark:border-gray-700 px-4 pb-3 pt-2 animate-fade">
+              <div class="grid grid-cols-4 gap-1 text-center">
+                ${miniCellStat('Vistas',    s.veces_mostrada)}
+                ${miniCellStat('Aciertos',  s.aciertos,   'text-green-600')}
+                ${miniCellStat('Fallos',    s.fallos,     'text-red-500')}
+                ${miniCellStat('Omitidas',  s.eliminaciones, 'text-gray-400')}
+              </div>
+            </div>
+          </div>`
+      }).join('')
+    }
+
+    function miniCard(label, val, color) {
+      return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 text-center">
+        <p class="text-xl font-bold ${color}">${val}</p>
+        <p class="text-[10px] text-gray-400">${label}</p>
+      </div>`
+    }
+    function miniCellStat(label, val, color = 'text-gray-700 dark:text-gray-300') {
+      return `<div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg py-1.5">
+        <p class="text-base font-bold ${color}">${Number(val)}</p>
+        <p class="text-[9px] text-gray-400">${label}</p>
+      </div>`
+    }
+  </script>
+</body>
+</html>

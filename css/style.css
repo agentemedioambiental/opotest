@@ -1,0 +1,103 @@
+/* ── Reset / Base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Evitar zoom en iOS al enfocar inputs */
+input, textarea, select { font-size: 16px !important; }
+
+/* ── Safe area (iPhone notch) ─────────────────────────── */
+.safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+
+/* ── Scroll suave ─────────────────────────────────────── */
+.scroll-smooth { scroll-behavior: smooth; }
+.overflow-y-auto { -webkit-overflow-scrolling: touch; }
+
+/* ── Animaciones ──────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity: 0 }             to { opacity: 1 } }
+@keyframes slideUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+@keyframes spin    { to { transform: rotate(360deg) } }
+@keyframes pulse   { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+
+.animate-fade  { animation: fadeIn  .2s ease }
+.animate-slide { animation: slideUp .25s ease }
+.animate-spin  { animation: spin 1s linear infinite }
+.animate-pulse { animation: pulse 2s ease infinite }
+
+/* ── Tap target mínimo ────────────────────────────────── */
+.touch-min { min-height: 44px; min-width: 44px; }
+
+/* ── Progress bar ─────────────────────────────────────── */
+.progress-track {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.dark .progress-track { background: #374151; }
+
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width .4s ease;
+}
+
+/* ── Opción botón (test) ──────────────────────────────── */
+.opcion-btn {
+  transition: transform .1s ease, background-color .15s, border-color .15s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.opcion-btn:active:not(:disabled) { transform: scale(0.98); }
+
+/* ── Bottom nav ───────────────────────────────────────── */
+#bottomNav { box-shadow: 0 -1px 0 rgba(0,0,0,.06); }
+.dark #bottomNav { box-shadow: 0 -1px 0 rgba(255,255,255,.06); }
+
+/* ── Cards hover ─────────────────────────────────────── */
+.card-link { transition: transform .1s ease; }
+.card-link:active { transform: scale(0.98); }
+
+/* ── Spinner ─────────────────────────────────────────── */
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+.dark .spinner { border-color: #374151; border-top-color: #818cf8; }
+
+/* ── Scrollbar discreta ───────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+.dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+
+/* ── File input ──────────────────────────────────────── */
+input[type="file"]::file-selector-button {
+  cursor: pointer;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 10px;
+  background: #eef2ff;
+  color: #4338ca;
+  transition: background .15s;
+}
+input[type="file"]::file-selector-button:hover { background: #e0e7ff; }
+.dark input[type="file"]::file-selector-button { background: #312e81; color: #a5b4fc; }
+
+/* ── Checkbox custom ─────────────────────────────────── */
+input[type="checkbox"] { accent-color: #6366f1; cursor: pointer; }

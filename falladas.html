@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Preguntas falladas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+  <header id="appHeader"></header>
+
+  <main class="max-w-2xl mx-auto px-4 pt-4 pb-32 space-y-4">
+
+    <!-- Info -->
+    <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 rounded-xl p-4 flex gap-3">
+      <span class="text-xl shrink-0">⚠️</span>
+      <p class="text-sm text-orange-700 dark:text-orange-300">
+        Preguntas ordenadas de menor a mayor tasa de acierto. Practica las que más te cuestan.
+      </p>
+    </div>
+
+    <!-- Filtro grupos + límite -->
+    <div class="space-y-2">
+      <div id="gruposFiltro" class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4"></div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-400">Top:</span>
+        <button onclick="setLimite(20)"  data-l="20"  class="limite-btn activo px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-600 text-white">20</button>
+        <button onclick="setLimite(50)"  data-l="50"  class="limite-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500">50</button>
+        <button onclick="setLimite(100)" data-l="100" class="limite-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500">100</button>
+        <button onclick="cargar()" class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm touch-min px-2">🔄</button>
+      </div>
+    </div>
+
+    <!-- Spinner -->
+    <div id="spinner" class="flex justify-center py-12"><div class="spinner"></div></div>
+
+    <!-- Empty -->
+    <div id="empty" class="hidden text-center py-12">
+      <p class="text-4xl mb-3">⚠️</p>
+      <p class="text-gray-400 text-sm">Sin historial aún.<br>Realiza tests primero.</p>
+    </div>
+
+    <!-- Lista -->
+    <div>
+      <p id="numFalladas" class="text-xs text-gray-400 px-1 mb-2"></p>
+      <div id="listaFalladas" class="space-y-2"></div>
+    </div>
+
+  </main>
+
+  <!-- Botón practicar (sticky) -->
+  <div id="btnWrap" class="hidden fixed bottom-16 left-0 right-0 px-4 py-3 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent pointer-events-none">
+    <div class="max-w-2xl mx-auto pointer-events-auto">
+      <button id="btnPracticar" onclick="iniciarTestFalladas()"
+        class="w-full min-h-[52px] bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-bold text-base rounded-2xl shadow-lg transition-colors flex items-center justify-center gap-2">
+        <span>▶</span>
+        <span id="btnPLabel">Practicar estas preguntas</span>
+        <div id="spinnerBtn" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+      </button>
+    </div>
+  </div>
+
+  <nav id="bottomNav"></nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/layout.js"></script>
+  <script>
+    let falladas    = []
+    let grupoActivo = ''
+    let limite      = 20
+
+    (async () => {
+      await requireAuth()
+      initLayout('falladas', 'Más falladas', './dashboard.html')
+      await cargarGrupos()
+      await cargar()
+    })()
+
+    async function cargarGrupos() {
+      try {
+        const { data } = await db.from('temas').select('grupo').order('grupo')
+        const grupos = [...new Set((data || []).map(t => t.grupo).filter(Boolean))]
+        if (grupos.length <= 1) return
+        document.getElementById('gruposFiltro').innerHTML =
+          ['', ...grupos].map(g => `
+            <button onclick="setGrupo('${g}')" data-grupo="${g}"
+              class="grupo-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+                ${g === grupoActivo ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}">
+              ${g || 'Todos'}
+            </button>`).join('')
+      } catch (e) { console.error(e) }
+    }
+
+    async function cargar() {
+      document.getElementById('spinner').classList.remove('hidden')
+      document.getElementById('listaFalladas').innerHTML = ''
+      document.getElementById('btnWrap').classList.add('hidden')
+      try {
+        let query = db.from('estadisticas_preguntas')
+          .select('*')
+          .gt('veces_mostrada', 0)
+          .order('tasa_acierto', { ascending: true })
+          .limit(limite)
+        if (grupoActivo) query = query.eq('grupo', grupoActivo)
+
+        const { data, error } = await query
+        if (error) throw error
+
+        falladas = (data || []).map(s => ({
+          ...s,
+          veces_mostrada: Number(s.veces_mostrada),
+          aciertos:       Number(s.aciertos),
+          fallos:         Number(s.fallos),
+          tasa_acierto:   Number(s.tasa_acierto),
+        }))
+
+        renderFalladas()
+      } catch (e) {
+        toast('Error al cargar datos', 'error')
+      } finally {
+        document.getElementById('spinner').classList.add('hidden')
+      }
+    }
+
+    function setGrupo(g) {
+      grupoActivo = g
+      document.querySelectorAll('.grupo-btn').forEach(b => {
+        b.className = `grupo-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+          ${b.dataset.grupo === g ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`
+      })
+      cargar()
+    }
+
+    function setLimite(l) {
+      limite = l
+      document.querySelectorAll('.limite-btn').forEach(b => {
+        b.className = `limite-btn px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
+          ${Number(b.dataset.l) === l ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`
+      })
+      cargar()
+    }
+
+    function renderFalladas() {
+      const empty = document.getElementById('empty')
+      const lista  = document.getElementById('listaFalladas')
+      document.getElementById('numFalladas').textContent = `${falladas.length} preguntas con historial`
+
+      if (!falladas.length) { empty.classList.remove('hidden'); lista.innerHTML = ''; return }
+      empty.classList.add('hidden')
+      document.getElementById('btnWrap').classList.remove('hidden')
+      document.getElementById('btnPLabel').textContent = `Practicar estas ${falladas.length} preguntas`
+
+      lista.innerHTML = falladas.map((s, i) => {
+        const tasa   = s.tasa_acierto
+        const colorB = tasa >= 70 ? 'bg-green-500' : tasa >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+        const colorT = colorPct(tasa)
+        const rankCls = i < 3
+          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+        return `
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-start gap-3">
+            <div class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${rankCls}">${i+1}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 mb-1">
+                <span class="text-[9px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium">${s.codigo_tema}</span>
+                <span class="text-[10px] text-gray-400 truncate">${s.tema || ''}</span>
+              </div>
+              <p class="text-sm text-gray-800 dark:text-gray-200 leading-snug line-clamp-2 mb-2">${s.pregunta}</p>
+              <div class="flex items-center gap-2">
+                <div class="progress-track flex-1 h-1.5"><div class="progress-fill ${colorB}" style="width:${tasa}%"></div></div>
+                <span class="text-sm font-bold ${colorT} shrink-0">${tasa}%</span>
+              </div>
+              <div class="flex gap-3 mt-1.5 text-[10px] text-gray-400">
+                <span>🔁 ${s.veces_mostrada}</span>
+                <span class="text-green-500 font-medium">✓ ${s.aciertos}</span>
+                <span class="text-red-400 font-medium">✗ ${s.fallos}</span>
+              </div>
+            </div>
+          </div>`
+      }).join('')
+    }
+
+    async function iniciarTestFalladas() {
+      if (!falladas.length) return
+      document.getElementById('btnPracticar').disabled = true
+      document.getElementById('spinnerBtn').classList.remove('hidden')
+
+      try {
+        const ids = falladas.map(f => f.pregunta_id)
+        const { data: preguntas, error } = await db.from('preguntas')
+          .select('*').in('id', ids).eq('activa', true).eq('eliminada', false)
+        if (error) throw error
+        if (!preguntas?.length) { toast('No hay preguntas disponibles', 'warning'); return }
+
+        // Ordenar: más falladas primero
+        const tasaMap = Object.fromEntries(falladas.map(f => [f.pregunta_id, f.tasa_acierto]))
+        preguntas.sort((a, b) => (tasaMap[a.id] ?? 100) - (tasaMap[b.id] ?? 100))
+
+        const temasIds = [...new Set(preguntas.map(p => p.tema_id).filter(Boolean))]
+        const { data: intento, error: e2 } = await db.from('intentos_test')
+          .insert({ temas_ids: temasIds, completado: false }).select().single()
+        if (e2) throw e2
+
+        guardarSesion({ intentoId: intento.id, preguntas, currentIndex: 0, respuestas: {}, startedAt: new Date().toISOString() })
+        window.location.href = `./test-activo.html?id=${intento.id}`
+      } catch (e) {
+        toast('Error: ' + e.message, 'error')
+        document.getElementById('btnPracticar').disabled = false
+        document.getElementById('spinnerBtn').classList.add('hidden')
+      }
+    }
+  </script>
+</body>
+</html>

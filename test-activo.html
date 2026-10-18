@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+  <style>
+    body { overflow: hidden; height: 100dvh; display: flex; flex-direction: column; }
+    #scrollArea { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+  <!-- ── Barra superior fija ── -->
+  <div id="topBar" class="shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-2.5">
+    <div class="max-w-2xl mx-auto flex items-center gap-3">
+      <span id="progNum" class="text-sm font-mono text-gray-500 dark:text-gray-400 shrink-0 tabular-nums">1/—</span>
+      <div class="progress-track flex-1"><div id="progFill" class="progress-fill bg-indigo-500" style="width:0%"></div></div>
+      <div class="flex gap-2 text-xs shrink-0">
+        <span id="cntOk"  class="text-green-500 font-bold">✓0</span>
+        <span id="cntFail" class="text-red-400  font-bold">✗0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Área scrollable ── -->
+  <div id="scrollArea">
+    <div class="max-w-2xl mx-auto px-4 pt-4 pb-4" id="contenido">
+
+      <!-- Cargando -->
+      <div id="loading" class="flex flex-col items-center justify-center py-20 gap-4">
+        <div class="spinner"></div>
+        <p class="text-gray-400 text-sm">Cargando test…</p>
+      </div>
+
+      <!-- Pregunta -->
+      <div id="preguntaWrap" class="hidden space-y-4 animate-slide">
+
+        <!-- Enunciado -->
+        <div id="enunciadoCard" class="rounded-2xl px-5 py-5 border transition-colors
+             bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700">
+          <p id="codigoTema" class="text-xs font-mono text-gray-400 mb-3"></p>
+          <p id="enunciado" class="text-[1.05rem] leading-relaxed font-medium text-gray-900 dark:text-white"></p>
+          <p id="feedbackMsg" class="hidden mt-3 text-sm font-bold"></p>
+        </div>
+
+        <!-- Opciones A-D -->
+        <div id="opciones" class="space-y-3"></div>
+
+        <!-- Explicación desplegable -->
+        <div id="explicacionWrap" class="hidden">
+          <button onclick="toggleExplicacion()"
+            class="w-full flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl text-sm font-medium text-amber-700 dark:text-amber-300 touch-min">
+            <span>💡 Ver explicación</span>
+            <span id="explicIcono">▼</span>
+          </button>
+          <div id="explicacionTexto" class="hidden mt-1 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl text-sm text-amber-800 dark:text-amber-200 leading-relaxed animate-fade"></div>
+        </div>
+
+        <!-- Botón no pertinente -->
+        <div id="noPertinenteWrap" class="flex flex-col items-center gap-2 pt-1">
+          <button id="btnNoPerti" onclick="pedirEliminar()"
+            class="text-xs text-gray-400 dark:text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1.5 touch-min px-3">
+            🚫 Marcar como no pertinente
+          </button>
+          <!-- Confirmación -->
+          <div id="confirmarElim" class="hidden flex items-center gap-2 text-sm animate-fade">
+            <span class="text-orange-400">¿Seguro?</span>
+            <button onclick="confirmarEliminar()" class="text-red-500 font-semibold underline touch-min px-1">Sí</button>
+            <button onclick="cancelarEliminar()" class="text-gray-400 touch-min px-1">No</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Botón siguiente (fijo abajo) ── -->
+  <div class="shrink-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-4 py-3 safe-bottom">
+    <div class="max-w-2xl mx-auto">
+      <button id="btnSiguiente" onclick="siguiente()"
+        class="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-base rounded-2xl shadow-md transition-colors flex items-center justify-center gap-2"
+        disabled>
+        <span id="btnLabel">Responde para continuar</span>
+        <span id="btnArrow" class="hidden text-xl">›</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script>
+    let sesion = null
+    let explicacionAbierta = false
+    let esperandoConfirmElim = false
+
+    const LETRAS = ['a','b','c','d']
+    const LABEL  = { a:'A', b:'B', c:'C', d:'D' }
+
+    (async () => {
+      await requireAuth()
+      const id = getParam('id')
+      if (!id) { window.location.replace('./test.html'); return }
+
+      sesion = cargarSesion(id)
+      if (!sesion || !sesion.preguntas?.length) { window.location.replace('./test.html'); return }
+
+      document.getElementById('loading').classList.add('hidden')
+      document.getElementById('preguntaWrap').classList.remove('hidden')
+      renderPregunta()
+    })()
+
+    // ── Render pregunta actual ────────────────────────────
+    function renderPregunta() {
+      const p   = sesion.preguntas[sesion.currentIndex]
+      const res = sesion.respuestas[p.id]
+      const n   = sesion.currentIndex + 1
+      const tot = sesion.preguntas.length
+
+      // Barra progreso
+      document.getElementById('progNum').textContent = `${n}/${tot}`
+      document.getElementById('progFill').style.width = `${(n / tot) * 100}%`
+
+      // Contadores
+      const vals = Object.values(sesion.respuestas)
+      document.getElementById('cntOk').textContent   = `✓${vals.filter(r => r.correcta === true).length}`
+      document.getElementById('cntFail').textContent = `✗${vals.filter(r => r.correcta === false).length}`
+
+      // Enunciado
+      document.getElementById('codigoTema').textContent = p.codigo_tema || ''
+      document.getElementById('enunciado').textContent  = p.pregunta
+
+      // Reset estado visual
+      const card = document.getElementById('enunciadoCard')
+      card.className = 'rounded-2xl px-5 py-5 border transition-colors bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+      document.getElementById('feedbackMsg').classList.add('hidden')
+      document.getElementById('explicacionWrap').classList.add('hidden')
+      document.getElementById('noPertinenteWrap').style.display = 'flex'
+      document.getElementById('btnNoPerti').classList.remove('hidden')
+      document.getElementById('confirmarElim').classList.add('hidden')
+      esperandoConfirmElim = false
+
+      // Si ya respondida, restaurar estado visual
+      if (res) {
+        aplicarRespuesta(p, res)
+      } else {
+        renderOpciones(p, null)
+        document.getElementById('btnSiguiente').disabled = true
+        document.getElementById('btnLabel').textContent  = 'Responde para continuar'
+        document.getElementById('btnArrow').classList.add('hidden')
+      }
+
+      // Volver al inicio del scroll
+      document.getElementById('scrollArea').scrollTop = 0
+    }
+
+    function renderOpciones(p, res) {
+      const yaResp = !!res && !res.eliminada
+
+      document.getElementById('opciones').innerHTML = LETRAS.map(op => {
+        let cls = ''
+        if (!yaResp) {
+          cls = 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+        } else if (op === p.respuesta_correcta) {
+          cls = 'bg-green-50 dark:bg-green-900/30 border-2 border-green-500'
+        } else if (res && op === res.respuesta && !res.correcta) {
+          cls = 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500 opacity-90'
+        } else {
+          cls = 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 opacity-50'
+        }
+
+        const letraCls = !yaResp
+          ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+          : op === p.respuesta_correcta
+            ? 'bg-green-500 text-white'
+            : res && op === res.respuesta && !res.correcta
+              ? 'bg-red-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+
+        const iconoDer = yaResp
+          ? op === p.respuesta_correcta ? '<span class="shrink-0 text-green-500 ml-auto">✓</span>'
+          : res && op === res.respuesta && !res.correcta ? '<span class="shrink-0 text-red-500 ml-auto">✗</span>'
+          : '' : ''
+
+        const textoCls = !yaResp ? 'text-gray-800 dark:text-gray-200'
+          : op === p.respuesta_correcta ? 'text-green-700 dark:text-green-300 font-medium'
+          : res && op === res.respuesta && !res.correcta ? 'text-red-600 dark:text-red-400'
+          : 'text-gray-500 dark:text-gray-500'
+
+        return `
+          <button onclick="responder('${op}')" ${yaResp ? 'disabled' : ''}
+            class="opcion-btn w-full flex items-start gap-3 px-4 py-4 rounded-2xl text-left min-h-[56px] ${cls}">
+            <span class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${letraCls}">${LABEL[op]}</span>
+            <span class="flex-1 text-sm leading-snug pt-1 ${textoCls}">${p['opcion_' + op]}</span>
+            ${iconoDer}
+          </button>`
+      }).join('')
+    }
+
+    function responder(opcion) {
+      const p = sesion.preguntas[sesion.currentIndex]
+      if (sesion.respuestas[p.id]) return
+
+      const correcta = opcion === p.respuesta_correcta
+      sesion.respuestas[p.id] = { pregunta_id: p.id, respuesta: opcion, correcta, eliminada: false }
+      guardarSesion(sesion)
+      aplicarRespuesta(p, sesion.respuestas[p.id])
+    }
+
+    function aplicarRespuesta(p, res) {
+      if (res.eliminada) return
+
+      renderOpciones(p, res)
+
+      // Color tarjeta enunciado
+      const card = document.getElementById('enunciadoCard')
+      if (res.correcta) {
+        card.className = 'rounded-2xl px-5 py-5 border transition-colors bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800'
+      } else {
+        card.className = 'rounded-2xl px-5 py-5 border transition-colors bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800'
+      }
+
+      // Mensaje feedback
+      const msg = document.getElementById('feedbackMsg')
+      msg.textContent = res.correcta ? '✓ ¡Correcto!' : '✗ Incorrecto'
+      msg.className = `mt-3 text-sm font-bold ${res.correcta ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`
+      msg.classList.remove('hidden')
+
+      // Explicación
+      if (p.explicacion) {
+        document.getElementById('explicacionWrap').classList.remove('hidden')
+        document.getElementById('explicacionTexto').textContent = p.explicacion
+      }
+
+      // Ocultar botón no pertinente
+      document.getElementById('noPertinenteWrap').style.display = 'none'
+
+      // Botón siguiente
+      const esUltima = sesion.currentIndex >= sesion.preguntas.length - 1
+      const btn = document.getElementById('btnSiguiente')
+      btn.disabled = false
+      document.getElementById('btnLabel').textContent = esUltima ? 'Terminar test' : 'Siguiente'
+      document.getElementById('btnArrow').classList.toggle('hidden', esUltima)
+    }
+
+    function toggleExplicacion() {
+      explicacionAbierta = !explicacionAbierta
+      document.getElementById('explicacionTexto').classList.toggle('hidden', !explicacionAbierta)
+      document.getElementById('explicIcono').textContent = explicacionAbierta ? '▲' : '▼'
+    }
+
+    function pedirEliminar() {
+      document.getElementById('btnNoPerti').classList.add('hidden')
+      document.getElementById('confirmarElim').classList.remove('hidden')
+      esperandoConfirmElim = true
+    }
+    function cancelarEliminar() {
+      document.getElementById('btnNoPerti').classList.remove('hidden')
+      document.getElementById('confirmarElim').classList.add('hidden')
+      esperandoConfirmElim = false
+    }
+    async function confirmarEliminar() {
+      const p = sesion.preguntas[sesion.currentIndex]
+      sesion.respuestas[p.id] = { pregunta_id: p.id, respuesta: null, correcta: null, eliminada: true }
+      guardarSesion(sesion)
+      // Marcar en BD (best-effort)
+      db.from('preguntas').update({ eliminada: true }).eq('id', p.id).then(() => {})
+      setTimeout(siguiente, 250)
+    }
+
+    async function siguiente() {
+      const p = sesion.preguntas[sesion.currentIndex]
+      if (!sesion.respuestas[p.id]) return
+
+      explicacionAbierta = false
+
+      const esUltima = sesion.currentIndex >= sesion.preguntas.length - 1
+      if (esUltima) {
+        await terminarTest()
+        return
+      }
+      sesion.currentIndex++
+      guardarSesion(sesion)
+      renderPregunta()
+    }
+
+    async function terminarTest() {
+      document.getElementById('btnSiguiente').disabled = true
+      document.getElementById('btnLabel').textContent  = 'Guardando…'
+
+      try {
+        const lista = Object.values(sesion.respuestas)
+        const elim  = lista.filter(r => r.eliminada).length
+        const resp  = lista.filter(r => !r.eliminada)
+        const ok    = resp.filter(r => r.correcta === true).length
+        const fail  = resp.filter(r => r.correcta === false).length
+        const total = resp.length
+        const pct   = total > 0 ? Math.round(ok / total * 10000) / 100 : 0
+
+        // Insertar respuestas
+        const filas = lista.map(r => ({
+          intento_test_id: sesion.intentoId, pregunta_id: r.pregunta_id,
+          respuesta: r.respuesta, correcta: r.correcta, eliminada: r.eliminada,
+        }))
+        if (filas.length) await db.from('respuestas_usuario').insert(filas)
+
+        // Actualizar intento
+        await db.from('intentos_test').update({
+          total_validas: total, aciertos: ok, errores: fail,
+          eliminadas: elim, porcentaje: pct, completado: true,
+        }).eq('id', sesion.intentoId)
+
+        eliminarSesion(sesion.intentoId)
+        window.location.replace(`./resultados.html?id=${sesion.intentoId}`)
+      } catch (e) {
+        toast('Error al guardar: ' + e.message, 'error')
+        document.getElementById('btnSiguiente').disabled = false
+        document.getElementById('btnLabel').textContent  = 'Terminar test'
+      }
+    }
+  </script>
+</body>
+</html>

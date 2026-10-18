@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest – Inicio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+  <header id="appHeader"></header>
+
+  <main class="max-w-2xl mx-auto px-4 pt-4 pb-24 space-y-5">
+
+    <!-- Banner test en progreso -->
+    <div id="bannerProgreso" class="hidden">
+      <a id="bannerLink" href="#" class="block">
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-2xl p-4 flex items-center gap-3 card-link">
+          <span class="text-2xl">⏱️</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-indigo-700 dark:text-indigo-300 text-sm">Test en progreso</p>
+            <p class="text-xs text-indigo-500 dark:text-indigo-400">Toca para continuar donde lo dejaste</p>
+          </div>
+          <span class="text-indigo-400">›</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Botón principal -->
+    <a href="./test.html" class="block card-link">
+      <div class="bg-indigo-600 dark:bg-indigo-700 rounded-2xl p-5 flex items-center gap-4">
+        <div class="bg-white/20 rounded-xl p-3">
+          <span class="text-3xl">▶️</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-white font-bold text-xl">Empezar test</p>
+          <p class="text-indigo-200 text-sm">Elige temas y practica</p>
+        </div>
+        <span class="text-white/60 text-2xl">›</span>
+      </div>
+    </a>
+
+    <!-- Stats resumen -->
+    <div id="statsGrid" class="grid grid-cols-2 gap-3">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Preguntas</p>
+        <p id="statPreguntas" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">—</p>
+        <p id="statElim" class="text-xs text-gray-400 mt-0.5">— eliminadas</p>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Tests</p>
+        <p id="statTests" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">—</p>
+        <p id="statRespondidas" class="text-xs text-gray-400 mt-0.5">— respondidas</p>
+      </div>
+    </div>
+
+    <!-- Media de acierto -->
+    <div id="mediaCard" class="hidden bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Media de acierto global</p>
+      <div class="flex items-center gap-3">
+        <div class="progress-track flex-1"><div id="mediaFill" class="progress-fill bg-indigo-500" style="width:0%"></div></div>
+        <span id="mediaPct" class="font-bold text-lg min-w-[48px] text-right">0%</span>
+      </div>
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="grid grid-cols-2 gap-3">
+      <a href="./temas.html" class="block card-link">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 flex flex-col gap-2 min-h-[80px] justify-center">
+          <span class="text-xl">📖</span>
+          <div><p class="font-semibold text-sm">Temas</p><p class="text-xs text-gray-400">Ver temario</p></div>
+        </div>
+      </a>
+      <a href="./importar.html" class="block card-link">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 flex flex-col gap-2 min-h-[80px] justify-center">
+          <span class="text-xl">📤</span>
+          <div><p class="font-semibold text-sm">Importar</p><p class="text-xs text-gray-400">Excel y TXT</p></div>
+        </div>
+      </a>
+      <a href="./estadisticas.html" class="block card-link">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 flex flex-col gap-2 min-h-[80px] justify-center">
+          <span class="text-xl">📊</span>
+          <div><p class="font-semibold text-sm">Estadísticas</p><p class="text-xs text-gray-400">Tus resultados</p></div>
+        </div>
+      </a>
+      <a href="./falladas.html" class="block card-link">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 flex flex-col gap-2 min-h-[80px] justify-center">
+          <span class="text-xl">⚠️</span>
+          <div><p class="font-semibold text-sm">Falladas</p><p class="text-xs text-gray-400">Repasa errores</p></div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Últimos tests -->
+    <div id="ultimosSection" class="hidden">
+      <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">Últimos tests</h2>
+      <div id="ultimosList" class="space-y-2"></div>
+    </div>
+
+  </main>
+
+  <nav id="bottomNav"></nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/layout.js"></script>
+  <script>
+    (async () => {
+      await requireAuth()
+      initLayout('dashboard')
+
+      // Test en progreso
+      const abiertas = getSesionesAbiertas()
+      for (const id of abiertas) {
+        const s = cargarSesion(id)
+        if (s && s.currentIndex < s.preguntas.length) {
+          document.getElementById('bannerProgreso').classList.remove('hidden')
+          document.getElementById('bannerLink').href = `./test-activo.html?id=${id}`
+          break
+        }
+      }
+
+      // Estadísticas
+      try {
+        const [{ count: total }, { count: elim }, intentos] = await Promise.all([
+          db.from('preguntas').select('*', { count: 'exact', head: true }).eq('activa', true),
+          db.from('preguntas').select('*', { count: 'exact', head: true }).eq('eliminada', true).eq('activa', true),
+          db.from('intentos_test').select('aciertos, total_validas').eq('completado', true),
+        ])
+
+        document.getElementById('statPreguntas').textContent = (total ?? 0).toLocaleString('es-ES')
+        document.getElementById('statElim').textContent      = `${elim ?? 0} eliminadas`
+        document.getElementById('statTests').textContent     = (intentos.data?.length ?? 0)
+
+        const respondidas = intentos.data?.reduce((s, i) => s + (i.total_validas || 0), 0) ?? 0
+        const aciertos    = intentos.data?.reduce((s, i) => s + (i.aciertos || 0), 0) ?? 0
+        const media       = respondidas > 0 ? Math.round(aciertos / respondidas * 100) : 0
+
+        document.getElementById('statRespondidas').textContent = `${respondidas.toLocaleString('es-ES')} respondidas`
+
+        if ((intentos.data?.length ?? 0) > 0) {
+          const mediaCard = document.getElementById('mediaCard')
+          mediaCard.classList.remove('hidden')
+          document.getElementById('mediaFill').style.width = `${media}%`
+          document.getElementById('mediaFill').className = `progress-fill ${media >= 70 ? 'bg-green-500' : media >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`
+          const pctEl = document.getElementById('mediaPct')
+          pctEl.textContent = `${media}%`
+          pctEl.className = `font-bold text-lg min-w-[48px] text-right ${colorPct(media)}`
+        }
+      } catch (e) { console.error(e) }
+
+      // Últimos tests
+      try {
+        const { data: ultimos } = await db.from('intentos_test')
+          .select('*').eq('completado', true)
+          .order('fecha', { ascending: false }).limit(5)
+
+        if (ultimos?.length) {
+          document.getElementById('ultimosSection').classList.remove('hidden')
+          document.getElementById('ultimosList').innerHTML = ultimos.map(i => `
+            <a href="./resultados.html?id=${i.id}" class="block card-link">
+              <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center gap-3">
+                <div class="w-2 h-10 rounded-full shrink-0 ${i.porcentaje >= 70 ? 'bg-green-400' : i.porcentaje >= 50 ? 'bg-yellow-400' : 'bg-red-400'}"></div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium">${i.total_validas} preguntas</p>
+                  <p class="text-xs text-gray-400">${fmtFecha(i.fecha)}</p>
+                </div>
+                <span class="font-bold text-base ${colorPct(i.porcentaje)}">${i.porcentaje}%</span>
+                <span class="text-gray-300">›</span>
+              </div>
+            </a>`).join('')
+        }
+      } catch (e) { console.error(e) }
+    })()
+  </script>
+</body>
+</html>
