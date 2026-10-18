@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpoTest - Exportar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+  <header id="appHeader"></header>
+  <main class="max-w-2xl mx-auto px-4 pt-5 pb-28 space-y-6">
+    <div id="carga" class="flex items-center gap-3 py-6" role="status">
+      <div class="spinner"></div><p class="text-sm text-gray-500 dark:text-gray-400">Cargando temario...</p>
+    </div>
+    <div id="errorBox" role="alert" class="hidden text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 rounded-lg p-3"></div>
+    <button id="btnReintentar" type="button" onclick="cargarTemario()" class="hidden min-h-[44px] px-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">Reintentar</button>
+    <div id="empty" class="hidden py-6 text-center space-y-3">
+      <p class="text-gray-500 dark:text-gray-400">No hay temas cargados.</p>
+      <a href="./temas.html" class="inline-flex items-center min-h-[44px] text-indigo-600 dark:text-indigo-400 font-medium text-sm">Ir a Temas</a>
+    </div>
+    <div id="exportarContenido" class="hidden space-y-6">
+      <section class="border-b border-gray-200 dark:border-gray-700 pb-6 space-y-4">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-base font-semibold">Temario</h2>
+          <span id="totalTemas" class="text-sm text-gray-500 dark:text-gray-400 tabular-nums"></span>
+        </div>
+        <button id="btnExcel" type="button" onclick="exportarExcel()"
+          class="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-semibold disabled:opacity-40">
+          <i data-lucide="sheet" class="w-4 h-4" aria-hidden="true"></i>Descargar Excel
+        </button>
+      </section>
+      <section class="space-y-4">
+        <h2 class="text-base font-semibold">Preguntas</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="min-w-0">
+            <label for="filtroGrupo" class="block text-sm font-medium mb-1.5">Grupo</label>
+            <select id="filtroGrupo" onchange="cambiarGrupo()" class="w-full min-w-0 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"></select>
+          </div>
+          <div class="min-w-0">
+            <label for="filtroTema" class="block text-sm font-medium mb-1.5">Tema</label>
+            <select id="filtroTema" onchange="actualizarSeleccion()" class="w-full min-w-0 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"></select>
+          </div>
+        </div>
+        <label class="flex items-center gap-3 min-h-[44px] text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+          <input id="incluirEliminadas" type="checkbox" class="w-4 h-4 shrink-0">
+          Incluir preguntas eliminadas e inactivas
+        </label>
+        <p id="seleccionResumen" class="text-sm text-gray-500 dark:text-gray-400"></p>
+        <button id="btnPreguntas" type="button" onclick="exportarPreguntas()"
+          class="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold disabled:opacity-40">
+          <i data-lucide="download" class="w-4 h-4" aria-hidden="true"></i><span id="preguntasLabel">Descargar ZIP</span>
+        </button>
+      </section>
+    </div>
+    <div id="progresoWrap" class="hidden space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <p id="estadoExportacion" role="status" aria-live="polite" aria-atomic="true" class="text-sm text-gray-600 dark:text-gray-300"></p>
+      <progress id="progresoExportacion" aria-label="Progreso de exportacion" max="100" class="block w-full h-2 accent-indigo-600"></progress>
+      <button id="btnCancelar" type="button" onclick="controlExportacion?.abort()" class="hidden min-h-[40px] px-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">Cancelar</button>
+    </div>
+  </main>
+  <nav id="bottomNav"></nav>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/layout.js"></script>
+  <script src="./js/exportar.js"></script>
+  <script>
+    let temasExportacion = []
+    let controlExportacion = null
+    let cargandoTemario = false
+
+    ;(async () => {
+      try {
+        const session = await requireAuth()
+        if (!session) return
+        initLayout('exportar', 'Exportar', './dashboard.html')
+        window.lucide?.createIcons()
+        await cargarTemario()
+      } catch (error) {
+        document.getElementById('carga').classList.add('hidden')
+        mostrarErrorExportacion(error)
+      }
+    })()
+
+    async function cargarTemario() {
+      if (cargandoTemario) return
+      cargandoTemario = true
+      document.getElementById('carga').classList.remove('hidden')
+      document.getElementById('btnReintentar').classList.add('hidden')
+      document.getElementById('errorBox').classList.add('hidden')
+      try {
+        temasExportacion = await leerFilasExportacion('temas', 'id,grupo,codigo,tema')
+        temasExportacion.sort((a, b) => String(a.grupo).localeCompare(String(b.grupo), 'es') || String(a.codigo).localeCompare(String(b.codigo), 'es', { numeric: true }))
+        document.getElementById('totalTemas').textContent = `${temasExportacion.length} temas`
+        document.getElementById('empty').classList.toggle('hidden', temasExportacion.length > 0)
+        document.getElementById('exportarContenido').classList.toggle('hidden', temasExportacion.length === 0)
+        const grupo = document.getElementById('filtroGrupo')
+        grupo.replaceChildren(new Option('Todos los grupos', ''))
+        ;[...new Set(temasExportacion.map(t => t.grupo))].forEach(g => grupo.appendChild(new Option(g, g)))
+        cambiarGrupo()
+      } catch (error) {
+        mostrarErrorExportacion(error)
+        document.getElementById('btnReintentar').classList.remove('hidden')
+      } finally {
+        cargandoTemario = false
+        document.getElementById('carga').classList.add('hidden')
+      }
+    }
+
+    function cambiarGrupo() {
+      const grupo = document.getElementById('filtroGrupo').value
+      const select = document.getElementById('filtroTema')
+      select.replaceChildren(new Option('Todos los temas', ''))
+      temasExportacion.filter(t => !grupo || t.grupo === grupo).forEach(t => select.appendChild(new Option(`${t.codigo} - ${t.tema}`, t.id)))
+      actualizarSeleccion()
+    }
+
+    function temasSeleccionadosExportacion() {
+      const grupo = document.getElementById('filtroGrupo').value
+      const tema = document.getElementById('filtroTema').value
+      return temasExportacion.filter(t => (!grupo || t.grupo === grupo) && (!tema || t.id === tema))
+    }
+
+    function actualizarSeleccion() {
+      const seleccion = temasSeleccionadosExportacion()
+      document.getElementById('seleccionResumen').textContent = `${seleccion.length} ${seleccion.length === 1 ? 'tema seleccionado' : 'temas seleccionados'}`
+      document.getElementById('preguntasLabel').textContent = seleccion.length === 1 ? 'Descargar TXT' : 'Descargar ZIP'
+      document.getElementById('btnPreguntas').disabled = seleccion.length === 0 || !!controlExportacion
+    }
+
+    function mostrarErrorExportacion(error) {
+      const el = document.getElementById('errorBox')
+      el.textContent = error.message || String(error)
+      el.classList.remove('hidden')
+    }
+
+    function estadoExportacion(texto, porcentaje = null) {
+      document.getElementById('progresoWrap').classList.remove('hidden')
+      document.getElementById('estadoExportacion').textContent = texto
+      const barra = document.getElementById('progresoExportacion')
+      if (porcentaje === null) barra.removeAttribute('value')
+      else barra.value = porcentaje
+    }
+
+    function fechaExportacion() {
+      const fecha = new Date()
+      return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
+    }
+
+    async function ejecutarExportacion(tarea) {
+      if (controlExportacion) return
+      controlExportacion = new AbortController()
+      document.getElementById('errorBox').classList.add('hidden')
+      document.getElementById('exportarContenido').setAttribute('aria-busy', 'true')
+      document.querySelectorAll('#exportarContenido button, #exportarContenido select, #exportarContenido input').forEach(el => { el.disabled = true })
+      document.getElementById('btnCancelar').classList.remove('hidden')
+      try {
+        await tarea(controlExportacion.signal)
+      } catch (error) {
+        if (controlExportacion.signal.aborted) estadoExportacion('Exportacion cancelada.', 0)
+        else {
+          estadoExportacion('No se ha generado ningun archivo.', 0)
+          mostrarErrorExportacion(error)
+        }
+      } finally {
+        controlExportacion = null
+        document.getElementById('exportarContenido').setAttribute('aria-busy', 'false')
+        document.querySelectorAll('#exportarContenido button, #exportarContenido select, #exportarContenido input').forEach(el => { el.disabled = false })
+        document.getElementById('btnCancelar').classList.add('hidden')
+        actualizarSeleccion()
+      }
+    }
+
+    async function exportarExcel() {
+      if (!temasExportacion.length) return
+      await ejecutarExportacion(async signal => {
+        if (typeof XLSX === 'undefined') throw new Error('No se ha cargado la biblioteca de Excel. Recarga la pagina.')
+        estadoExportacion('Preparando temario...', 0)
+        const contenido = crearExcelTemario(temasExportacion)
+        signal.throwIfAborted()
+        descargarExportacion(contenido, `temario_${fechaExportacion()}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        estadoExportacion(`Excel generado: ${temasExportacion.length} temas.`, 100)
+      })
+    }
+
+    async function exportarPreguntas() {
+      const seleccion = temasSeleccionadosExportacion()
+      if (!seleccion.length) return
+      const incluir = document.getElementById('incluirEliminadas').checked
+      await ejecutarExportacion(async signal => {
+        if (typeof XLSX === 'undefined' || (seleccion.length > 1 && typeof JSZip === 'undefined')) throw new Error('No se han cargado las bibliotecas de exportacion. Recarga la pagina.')
+        estadoExportacion('Descargando preguntas...')
+        const agrupadas = await obtenerPreguntasExportacion(seleccion, incluir, signal, cantidad => estadoExportacion(`Descargando preguntas: ${cantidad.toLocaleString('es-ES')} registros leidos...`))
+        const conPreguntas = seleccion.filter(t => agrupadas.get(t.id)?.length)
+        const total = conPreguntas.reduce((sum, t) => sum + agrupadas.get(t.id).length, 0)
+        if (!total) throw new Error('No hay preguntas que coincidan con la seleccion.')
+        signal.throwIfAborted()
+        if (seleccion.length === 1) {
+          descargarExportacion(crearTxtTema(seleccion[0], agrupadas.get(seleccion[0].id)), nombreTxtTema(seleccion[0]), 'text/plain;charset=utf-8')
+        } else {
+          const contenido = await crearZipPreguntas(conPreguntas, agrupadas, signal, porcentaje => estadoExportacion('Comprimiendo archivos TXT...', porcentaje))
+          signal.throwIfAborted()
+          descargarExportacion(contenido, `preguntas_${fechaExportacion()}.zip`, 'application/zip')
+        }
+        const vacios = seleccion.length - conPreguntas.length
+        estadoExportacion(`${total.toLocaleString('es-ES')} preguntas exportadas en ${conPreguntas.length} ${conPreguntas.length === 1 ? 'TXT' : 'archivos TXT'}.${vacios ? ` ${vacios} temas sin preguntas.` : ''}`, 100)
+      })
+    }
+  </script>
+</body>
+</html>
