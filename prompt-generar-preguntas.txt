@@ -1,0 +1,79 @@
+# GENERACIÓN DE PREGUNTAS TIPO TEST PARA OPOSICIONES
+
+A partir de la documentación que te proporcione (PDF, Word, normativa o apuntes), genera **100 preguntas tipo test** para preparar una oposición, ajustadas al temario y al ámbito de la documentación proporcionada.
+
+## 1. Contenido y dificultad
+
+- Las preguntas tendrán un nivel de dificultad **medio-alto**, adecuado para una oposición del grupo A1.
+- Deben evaluar el conocimiento y la comprensión de los contenidos, no únicamente la memorización.
+- Prioriza los aspectos más importantes del temario, especialmente aquellos con mayor probabilidad de aparecer en un examen oficial.
+- Evita preguntas excesivamente específicas, irrelevantes o cuya única finalidad sea memorizar números de artículos.
+- Incluye preguntas sobre los anexos de las disposiciones normativas cuando tengan relevancia técnica.
+- Las preguntas deben ser rigurosas, inequívocas y basarse en la documentación proporcionada.
+- No inventes contenidos ni introduzcas información que contradiga las fuentes.
+
+## 2. Estructura de las preguntas
+
+Cada pregunta tendrá cuatro alternativas de respuesta (A, B, C y D), de las cuales **solo una será correcta**.
+
+Las respuestas incorrectas deberán ser plausibles y suficientemente elaboradas para que no resulte evidente cuál es la correcta.
+
+**Es imprescindible que todas las alternativas tengan una longitud, estructura gramatical y nivel de detalle similares.** Evita que la respuesta correcta pueda identificarse por ser más larga, más precisa o estar redactada de manera diferente.
+
+No introduzcas pistas lingüísticas que permitan deducir la respuesta correcta sin conocer la materia.
+
+## 3. Distribución de las respuestas correctas
+
+**MUY IMPORTANTE:**
+
+- Distribuye las respuestas correctas aleatoriamente entre A, B, C y D.
+- La distribución debe ser aproximadamente uniforme.
+- Ninguna de las cuatro letras podrá representar más del **30 % del total de respuestas correctas**.
+- Para 100 preguntas, utiliza preferentemente 25 respuestas correctas por cada letra.
+- Evita secuencias repetitivas o patrones fácilmente reconocibles.
+- No concentres las respuestas correctas en B o C.
+- Antes de entregar el archivo, comprueba estadísticamente la distribución y corrige cualquier desviación.
+
+## 4. Formato obligatorio del archivo TXT
+
+Genera un archivo de texto plano (.txt).
+
+Cada pregunta ocupará **una única línea**, con los siguientes campos separados mediante el carácter vertical `|`:
+
+ID | Pregunta | Opción A | Opción B | Opción C | Opción D | Letra correcta | Explicación breve
+
+Ejemplo:
+
+1 | ¿Cuál es la finalidad principal de la Red Natura 2000? | Proteger exclusivamente especies en peligro de extinción | Establecer una red ecológica europea para conservar hábitats y especies de interés comunitario | Regular únicamente los parques nacionales | Prohibir cualquier actividad humana en los espacios protegidos | B | La Red Natura 2000 persigue garantizar la conservación de hábitats naturales y especies de interés comunitario.
+
+**Requisitos estrictos:**
+
+- El ID será exclusivamente numérico y consecutivo, comenzando por 1.
+- No incluir cabeceras.
+- No incluir títulos ni comentarios al principio o al final del archivo.
+- No utilizar bloques de código Markdown.
+- No introducir saltos de línea dentro de las preguntas.
+- No utilizar el carácter `|` dentro del texto de las preguntas, respuestas o explicaciones.
+- El archivo contendrá exclusivamente las líneas correspondientes a las preguntas.
+- Utilizar codificación UTF-8 para conservar correctamente tildes y caracteres especiales.
+
+## 5. Control de calidad
+
+Antes de entregar el resultado, comprueba que:
+
+1. Se ha generado exactamente el número de preguntas solicitado.
+2. No existen preguntas duplicadas o sustancialmente repetidas.
+3. Todas tienen cuatro opciones y una única respuesta correcta.
+4. La letra indicada coincide con la respuesta realmente correcta.
+5. Las opciones tienen longitudes y estilos de redacción homogéneos.
+6. La distribución de respuestas correctas cumple el límite máximo del 30 % por letra.
+7. No existen errores conceptuales ni contradicciones con la documentación.
+8. Todas las líneas respetan estrictamente el formato TXT establecido.
+
+## 6. Entrega
+
+Genera un archivo TXT descargable con el nombre que te indique.
+
+**No sustituyas las preguntas por ejemplos, esquemas o marcadores de posición. Debes generar la totalidad de las preguntas solicitadas, con su contenido completo y revisado.**
+
+La documentación de referencia será la que adjunte junto con este prompt.
